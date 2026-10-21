@@ -80,6 +80,8 @@ for split in ["train", "val"]:
 model = timm.create_model("deit_small_distilled_patch16_224", pretrained=True).to(device).eval()
 cfg = timm.data.resolve_data_config({}, model=model)  # the preprocessing the model was trained with
 
+# %%
+
 # ImageFolder labels the 10 folders 0..9, but the model outputs 1000 ImageNet classes:
 # to_imagenet[label] translates a folder label into the ImageNet class index
 wnids = list(timm.data.ImageNetInfo().label_names())
@@ -114,12 +116,95 @@ def evaluate(model, resolution):
         n += len(y)
     return correct / n
 
+# %%
+from bicubic import enlarge_pos_embed
+from torch import nn
+
+# Should be torch.Size([1, 198, 384])
+
+SMALLER_RES = 224
+BIGGER_RES = 384
+
+chosen_resolution = SMALLER_RES
+
+if chosen_resolution > SMALLER_RES and model.pos_embed.shape[1] == 198:
+    chosen_mode = 'bicubic'
+    # chosen_mode = 'bilinear'
+    # chosen_mode = 'nearest'
+    #
+    print(f"Chosen interpolation mode: {chosen_mode}")
+    print(model.pos_embed.shape, "Before resizing")
+
+    assert isinstance(model.pos_embed, torch.Tensor)
+    model.pos_embed = nn.Parameter(enlarge_pos_embed(model.pos_embed, chosen_mode))
+
+    if hasattr(model, "patch_embed"):
+        model.patch_embed.img_size = (chosen_resolution, chosen_resolution)
+        model.patch_embed.grid_size = (24, 24)
+        model.patch_embed.num_patches = 24 * 24
+
+# Should be torch.Size([1, 578, 384])
+    print(model.pos_embed.shape, "After resizing")
+    print(f"DeiT-S 0-shot ({chosen_mode}) @{chosen_resolution}: top-1 {evaluate(model, chosen_resolution):.2%}")
 
 # %% [markdown] id="Lc9q5bbMLD_S"
 # **Step 4. Baseline.** Takes about half a minute. You should get **top-1 ≈ 97.20%** at 224. If not, something in the setup went wrong.
 
 # %% colab={"base_uri": "https://localhost:8080/"} id="7vuhP0KHLD_T" outputId="6ad96302-476a-47ba-92a9-1d3414246c80"
-print(f"baseline DeiT-S distilled @224: top-1 {evaluate(model, 224):.2%}")
+def fine_tune(model, resolution, datapoints_num_limit = 100_000):
+    tf = timm.data.create_transform(**dict(cfg, input_size=(3, resolution, resolution), is_training=True))
+    dataset = datasets.ImageFolder("imagewoof2/train", transform=tf)
+    loader = torch.utils.data.DataLoader(dataset, batch_size=64, num_workers=2, shuffle=True, pin_memory=True)
+
+    optimizer = torch.optim.AdamW(model.parameters(), lr=2e-5, weight_decay=1e-4)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=11)
+    criterion = nn.CrossEntropyLoss()
+    scaler = torch.amp.GradScaler(device)
+
+    # 4. Fine-tuning loop (11 epochs = 99,275 images, fitting the 100k budget)
+    EPOCHS = 11
+
+    training_images_num = EPOCHS * len(dataset)
+    assert training_images_num <= datapoints_num_limit, f"Budget exceeded, expected max {datapoints_num_limit} per training run, got {training_images_num}"
+
+    print(f"Starting {resolution}x{resolution} Fine-Tuning Control Run...")
+    for epoch in range(1, EPOCHS + 1):
+        model.train()
+        total_loss = 0.0
+        correct = 0
+        total = 0
+
+        for images, targets in loader:
+            images, targets = images.to(device), targets.to(device)
+            optimizer.zero_grad()
+
+            # Mixed precision for speed and memory efficiency
+            with torch.autocast("cuda", dtype=torch.float16):
+                outputs = model(images)
+
+                # Slice the 10 dog logits matching Imagewoof classes
+                dog_logits = outputs[:, to_imagenet]
+                loss = criterion(dog_logits, targets)
+
+            scaler.scale(loss).backward()
+            scaler.step(optimizer)
+            scaler.update()
+
+            total_loss += loss.item() * images.size(0)
+            correct += (dog_logits.argmax(-1) == targets).sum().item()
+            total += targets.size(0)
+
+        scheduler.step()
+
+        train_acc = correct / total
+        avg_loss = total_loss / total
+        print(f"Epoch [{epoch:02d}/{EPOCHS:02d}] - Loss: {avg_loss:.4f} | Train Acc: {train_acc:.2%}")
+
+# %%
+fine_tune(model, chosen_resolution)
+
+# %%
+print(f"DeiT-S fine-tuned @{chosen_resolution}: top-1 {evaluate(model, chosen_resolution):.2%}")
 
 # %% [markdown] id="bjJnsULFLD_T"
 # # Before you start
