@@ -3,7 +3,7 @@ import torch
 import torch.nn.functional as F
 
 # This will return an enlarged pos_embed matrix, upsampling is done using bicubic interpolation
-def enlarge_pos_embed(pos_embed: torch.Tensor) -> torch.Tensor:
+def enlarge_pos_embed(pos_embed: torch.Tensor, interpolation_mode='bicubic') -> torch.Tensor:
     # [CLS] and [DIST] tokens
     special_tokens = pos_embed[:, :2]
     pre_interpolaton = pos_embed[:, 2:]
@@ -13,7 +13,7 @@ def enlarge_pos_embed(pos_embed: torch.Tensor) -> torch.Tensor:
         pre_interpolaton, "one (r c) D -> one D r c", r=14
     )
     # new_pos_embed = torch.zeros(interpolated.shape)
-    post_interpolation = F.interpolate(pre_interpolaton, (24, 24), mode="bicubic")
+    post_interpolation = F.interpolate(pre_interpolaton, (24, 24), mode=interpolation_mode)
 
     post_interpolation = einops.rearrange(
         post_interpolation, "one D r c -> one (r c) D"

@@ -81,25 +81,6 @@ model = timm.create_model("deit_small_distilled_patch16_224", pretrained=True).t
 cfg = timm.data.resolve_data_config({}, model=model)  # the preprocessing the model was trained with
 
 # %%
-from bicubic import enlarge_pos_embed
-from torch import mode, nn
-
-# Should be torch.Size([1, 198, 384])
-print(model.pos_embed.shape, "Before resizing")
-
-assert isinstance(model.pos_embed, torch.Tensor)
-model.pos_embed = nn.Parameter(enlarge_pos_embed(model.pos_embed))
-
-BIGGER_RES = 384
-
-if hasattr(model, "patch_embed"):
-    model.patch_embed.img_size = (BIGGER_RES, BIGGER_RES)
-    model.patch_embed.grid_size = (24, 24)
-    model.patch_embed.num_patches = 24 * 24
-
-# Should be torch.Size([1, 578, 384])
-print(model.pos_embed.shape, "After resizing")
-# %%
 
 # ImageFolder labels the 10 folders 0..9, but the model outputs 1000 ImageNet classes:
 # to_imagenet[label] translates a folder label into the ImageNet class index
@@ -135,6 +116,28 @@ def evaluate(model, resolution):
         n += len(y)
     return correct / n
 
+# %%
+from bicubic import enlarge_pos_embed
+from torch import mode, nn
+
+# Should be torch.Size([1, 198, 384])
+print(model.pos_embed.shape, "Before resizing")
+
+assert isinstance(model.pos_embed, torch.Tensor)
+chosen_mode = 'bicubic'
+# chosen_mode = 'bilinear'
+# chosen_mode = 'nearest'
+model.pos_embed = nn.Parameter(enlarge_pos_embed(model.pos_embed, chosen_mode))
+
+BIGGER_RES = 384
+
+if hasattr(model, "patch_embed"):
+    model.patch_embed.img_size = (BIGGER_RES, BIGGER_RES)
+    model.patch_embed.grid_size = (24, 24)
+    model.patch_embed.num_patches = 24 * 24
+
+# Should be torch.Size([1, 578, 384])
+print(model.pos_embed.shape, "After resizing")
 
 # %% [markdown] id="Lc9q5bbMLD_S"
 # **Step 4. Baseline.** Takes about half a minute. You should get **top-1 ≈ 97.20%** at 224. If not, something in the setup went wrong.
@@ -143,6 +146,7 @@ def evaluate(model, resolution):
 SMALLER_RES = 224
 # print(f"baseline DeiT-S distilled @224: top-1 {evaluate(model, SMALLER_RES):.2%}")
 print(f"baseline DeiT-S distilled @224: top-1 {evaluate(model, BIGGER_RES):.2%}")
+print(f"Chosen interpolation node {chosen_mode}")
 
 # %% [markdown] id="bjJnsULFLD_T"
 # # Before you start
