@@ -10,4 +10,4 @@ Baseline DeiT-S distilled @224 (unmodified): **97.20%**
 
 ## Fine-Tuning on the Original Resolution (@224 Control)
 
-- **DeiT-S fine-tuned @224 (11 epochs on `train`):** *(to be updated upon re-running on `train` split)*
+- **DeiT-S fine-tuned @224 (11 epochs on `train`):**  `97.30%`
