@@ -1,0 +1,26 @@
+[project]
+name = "pattern-recognition"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "typsoon", email = "p.sitek228@gmail.com" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "einops>=0.8.2",
+    "ipykernel>=7.4.0",
+    "jaxtyping>=0.3.11",
+    "jupyter>=1.1.1",
+    "jupytext>=1.19.6",
+    "quarto>=0.1.0",
+    "timm>=1.0.30",
+    "torch>=2.14.1",
+]
+
+# [project.scripts]
+# pattern-recognition = "pattern_recognition:main"
+#
+# [build-system]
+# requires = ["uv_build>=0.13.0,<0.14.0"]
+# build-backend = "uv_build"
