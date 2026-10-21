@@ -1,12 +1,13 @@
 # Results
 
-## One-shot results
+## 0-Shot Evaluation Across Interpolation Modes (@384)
 
-- baseline DeiT-S distilled @224: top-1 96.56%
-Chosen interpolation node nearest
+Baseline DeiT-S distilled @224 (unmodified): **97.20%**
 
-- baseline DeiT-S distilled @224: top-1 96.72%
-Chosen interpolation node bilinear
+- **Nearest Neighbor (@384):** `96.56%`
+- **Bilinear (@384):** `96.72%`
+- **Bicubic (@384):** `96.69%`
 
-- baseline DeiT-S distilled @224: top-1 96.69%
-Chosen interpolation node bicubic
+## Fine-Tuning on the Original Resolution (@224 Control)
+
+- **DeiT-S fine-tuned @224 (11 epochs on `train`):** *(to be updated upon re-running on `train` split)*
