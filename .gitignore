@@ -1,2 +1,5 @@
 **imagewoof*
 __pycache__
+
+.venv
+.idea
