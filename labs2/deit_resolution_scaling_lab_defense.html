@@ -1,0 +1,1258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scaling DeiT to Higher Resolution (384x384) — Lab Defense</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #1e293b;
+            overflow-x: hidden;
+        }
+        code, pre, .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        /* Slide aspect ratio and transitions */
+        .slide-card {
+            display: none;
+            animation: fadeIn 0.2s ease-out;
+        }
+        .slide-card.active {
+            display: flex;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        /* Custom scrollbar for tables/code if needed */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 3px;
+        }
+        /* Print All Mode */
+        body.print-mode {
+            background-color: #f8fafc;
+            overflow-y: auto;
+        }
+        body.print-mode #top-bar,
+        body.print-mode #bottom-bar {
+            display: none !important;
+        }
+        body.print-mode #deck-viewport {
+            padding: 1rem;
+            height: auto;
+            display: block;
+        }
+        body.print-mode .slide-card {
+            display: flex !important;
+            margin-bottom: 2.5rem;
+            page-break-after: always;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            border: 1px solid #cbd5e1;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between select-none sm:select-text">
+
+    <!-- TOP NAVIGATION & PRESENTER HUD -->
+    <header id="top-bar" class="bg-slate-900 border-b border-slate-800 text-slate-200 px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 z-30">
+        <div class="flex items-center gap-3">
+            <span class="bg-blue-700 text-white text-xs font-bold px-2.5 py-1 rounded tracking-wider uppercase">JU Pattern Recognition</span>
+            <span class="text-sm font-semibold text-slate-300 hidden md:inline">Task 2 Defense: DeiT Resolution Scaling</span>
+            <span id="presenter-badge" class="text-xs font-medium px-2.5 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-blue-300">
+                Shared Intro
+            </span>
+        </div>
+
+        <!-- Timer & Controls -->
+        <div class="flex items-center gap-2 sm:gap-4">
+            <!-- 10-Min Defense Timer -->
+            <div class="flex items-center bg-slate-950 border border-slate-800 rounded px-2.5 py-1 gap-2">
+                <span class="text-xs text-slate-400 uppercase font-semibold">Timer:</span>
+                <span id="timer-display" class="mono text-sm font-bold text-emerald-400">00:00</span>
+                <span class="text-xs text-slate-500">/ 10:00</span>
+                <button onclick="toggleTimer()" id="timer-btn" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 px-2 py-0.5 rounded transition">Start</button>
+                <button onclick="resetTimer()" class="text-xs text-slate-400 hover:text-slate-200 px-1">↺</button>
+            </div>
+
+            <!-- Toggle Speaker Notes -->
+            <button onclick="toggleAllNotes()" id="notes-toggle-btn" class="text-xs bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 px-3 py-1.5 rounded font-medium transition flex items-center gap-1.5">
+                <span>🗒️ Notes: ON</span>
+            </button>
+
+            <!-- Toggle Print/Scroll View -->
+            <button onclick="togglePrintMode()" class="text-xs bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 px-3 py-1.5 rounded font-medium transition hidden sm:inline-block">
+                📄 All Slides View
+            </button>
+        </div>
+    </header>
+
+    <!-- MAIN SLIDE VIEWPORT -->
+    <main id="deck-viewport" class="flex-1 flex flex-col items-center justify-center p-2 sm:p-6 md:p-8 overflow-y-auto">
+
+        <!-- ==========================================
+             SLIDE 1: TITLE SLIDE (SHARED)
+             ========================================== -->
+        <section class="slide-card active w-full max-w-6xl bg-white rounded-xl shadow-2xl border border-slate-200 flex-col justify-between overflow-hidden" data-presenter="Shared Intro (~0:30)">
+            <div class="h-2 bg-gradient-to-r from-blue-800 via-indigo-700 to-emerald-600"></div>
+            
+            <div class="p-8 sm:p-12 md:p-16 flex-1 flex flex-col justify-center">
+                <div class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-blue-800 bg-blue-50 border border-blue-200 px-3 py-1 rounded-md w-fit mb-6">
+                    Pattern Recognition Lab 2 &bull; Jagiellonian University &bull; October 2026 &bull; [Group ID / Room]
+                </div>
+
+                <h1 class="text-3xl sm:text-5xl font-bold text-slate-900 tracking-tight leading-tight mb-4">
+                    Scaling DeiT to Higher Resolution (384&times;384)
+                </h1>
+                <p class="text-lg sm:text-2xl text-slate-600 font-medium max-w-4xl mb-10">
+                    Does Seeing More Pixels Help? Evidence, Controls, and Mechanics on Imagewoof
+                </p>
+
+                <!-- Presenters Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-slate-200 pt-8">
+                    <div class="bg-slate-50 p-4 rounded-lg border-l-4 border-blue-600">
+                        <div class="text-xs font-bold uppercase text-blue-700 tracking-wider mb-1">Part 1 &bull; Slides 2–4 (~3.5m)</div>
+                        <div class="font-bold text-slate-900 text-base mb-1">[Person 1 Name]</div>
+                        <div class="text-xs text-slate-600 leading-relaxed">PE Interpolation Surgery, 0-Shot Modes &amp; The 224&times;224 Control Baseline</div>
+                    </div>
+                    <div class="bg-slate-50 p-4 rounded-lg border-l-4 border-indigo-600">
+                        <div class="text-xs font-bold uppercase text-indigo-700 tracking-wider mb-1">Part 2 &bull; Slides 5–7 (~3.5m)</div>
+                        <div class="font-bold text-slate-900 text-base mb-1">[Person 2 Name]</div>
+                        <div class="text-xs text-slate-600 leading-relaxed">Parameter-Efficient Probing, Coordinate Drift &amp; Selective Layer Freezing</div>
+                    </div>
+                    <div class="bg-slate-50 p-4 rounded-lg border-l-4 border-emerald-600">
+                        <div class="text-xs font-bold uppercase text-emerald-700 tracking-wider mb-1">Part 3 &bull; Slides 8–11 (~3.0m)</div>
+                        <div class="font-bold text-slate-900 text-base mb-1">[Person 3 Name]</div>
+                        <div class="text-xs text-slate-600 leading-relaxed">Full End-to-End Adaptation, Progressive Curriculum &amp; Final Verdict</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Speaker Notes -->
+            <div class="speaker-notes bg-amber-50/90 border-t border-amber-200 px-6 py-3.5 text-xs sm:text-sm text-amber-950">
+                <span class="font-bold uppercase tracking-wider text-amber-800 mr-2">[Speaker Notes — Person 1]:</span>
+                Welcome to our Task 2 defense on scaling Data-Efficient Image Transformers from 224x224 to 384x384 on the Imagewoof dataset. We structured our investigation into three controlled tracks: first, I will cover the positional embedding tensor mechanics, zero-shot degradation, and our 224 control baseline; second, [Person 2 Name] will examine parameter-efficient tuning and partial block freezing; finally, [Person 3 Name] will present full end-to-end fine-tuning, progressive resolution curricula, and our final answer to the task prompt.
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SLIDE 2: PROBLEM FRAMING & THE PAPER'S CLAIM
+             ========================================== -->
+        <section class="slide-card w-full max-w-6xl bg-white rounded-xl shadow-2xl border border-slate-200 flex-col justify-between overflow-hidden" data-presenter="Part 1: [Person 1 Name] (~1:00)">
+            <div class="bg-slate-900 text-white px-6 py-3.5 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <span class="bg-blue-600 text-xs font-bold px-2 py-0.5 rounded">PART 1 &bull; [Person 1 Name]</span>
+                    <h2 class="text-lg sm:text-xl font-bold">Problem Framing &amp; The Paper's Claim</h2>
+                </div>
+                <span class="text-xs text-slate-400 mono">Slide 2 / 11</span>
+            </div>
+
+            <div class="p-6 sm:p-8 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                <!-- Left Column: Paper Claim & Task Setup -->
+                <div class="lg:col-span-7 space-y-4">
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <div class="text-xs font-bold uppercase text-blue-800 mb-1">Core Research Question</div>
+                        <p class="text-sm sm:text-base font-semibold text-slate-900">
+                            Does fine-tuning DeiT-S at 384&times;384 improve classification accuracy on our dataset within a strict &le;100,000 image training budget?
+                        </p>
+                    </div>
+
+                    <div class="bg-slate-50 border border-slate-200 rounded-lg p-4">
+                        <div class="text-xs font-bold uppercase text-slate-500 mb-2">Literature Benchmark: Touvron et al. (ICML 2021, Table 10)</div>
+                        <p class="text-xs sm:text-sm text-slate-700 mb-3">
+                            Fine-tuning pre-trained models at higher resolution consistently boosted Top-1 accuracy on full ImageNet-1k (1.28M images):
+                        </p>
+                        <div class="grid grid-cols-2 gap-3 text-center">
+                            <div class="bg-white p-2.5 rounded border border-slate-200">
+                                <div class="text-xs text-slate-500 font-medium">DeiT-B (224 &rarr; 384)</div>
+                                <div class="mono font-bold text-sm sm:text-base text-slate-800">81.8% &rarr; 83.1% <span class="text-emerald-600">(+1.3%)</span></div>
+                            </div>
+                            <div class="bg-white p-2.5 rounded border border-slate-200">
+                                <div class="text-xs text-slate-500 font-medium">DeiT-S (224 &rarr; 384)</div>
+                                <div class="mono font-bold text-sm sm:text-base text-slate-800">79.8% &rarr; 81.2% <span class="text-emerald-600">(+1.4%)</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-50 border border-slate-200 rounded-lg p-4">
+                        <div class="text-xs font-bold uppercase text-slate-500 mb-2">Experimental Constraints &amp; Protocol</div>
+                        <ul class="text-xs sm:text-sm text-slate-700 space-y-1.5 list-disc list-inside">
+                            <li><strong>Backbone:</strong> Distilled <code class="bg-slate-200 px-1 rounded">deit_small_distilled_patch16_224</code> (21.8M params).</li>
+                            <li><strong>Dataset:</strong> Imagewoof (10 challenging dog breeds from ImageNet; 9,025 train / 3,929 val).</li>
+                            <li><strong>Compute Cap:</strong> &le;100,000 images per run &rarr; max <strong>11 epochs</strong> (11 &times; 9,025 = 99,275 images).</li>
+                            <li><strong>Evaluation:</strong> Fixed <code class="bg-slate-200 px-1 rounded">evaluate()</code> via 10-class ImageNet logit indexing.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Right Column: Why Full-Size Imagewoof & Baseline Card -->
+                <div class="lg:col-span-5 space-y-4">
+                    <div class="bg-amber-50 border border-amber-300 rounded-lg p-4">
+                        <div class="flex items-center justify-between mb-1.5">
+                            <span class="text-xs font-bold uppercase text-amber-900">Data Integrity Decision</span>
+                            <span class="text-[11px] bg-amber-200 text-amber-900 font-semibold px-2 py-0.5 rounded">Crucial Control</span>
+                        </div>
+                        <h3 class="text-sm font-bold text-slate-900 mb-2">Why Full-Size Imagewoof instead of "-320"?</h3>
+                        <p class="text-xs sm:text-sm text-slate-700 leading-relaxed mb-2">
+                            Standard <code class="bg-amber-100 px-1 rounded">imagewoof2-320</code> pre-downscales all images so the shortest edge is 320 px.
+                        </p>
+                        <p class="text-xs sm:text-sm text-slate-700 leading-relaxed">
+                            Upscaling 320 px images to 384&times;384 introduces synthetic <strong>interpolation blur</strong> into the inputs. To test whether <em>genuine optical detail</em> helps, we use full-resolution raw Imagewoof images.
+                        </p>
+                    </div>
+
+                    <div class="bg-slate-900 text-white rounded-lg p-5 border border-slate-800">
+                        <div class="text-xs font-semibold uppercase text-slate-400 mb-1">Starting Reference Point</div>
+                        <div class="text-sm text-slate-300 mb-3">Unmodified DeiT-S @ 224&times;224 (0-Shot Evaluation)</div>
+                        <div class="flex items-baseline justify-between border-t border-slate-800 pt-3">
+                            <span class="text-xs uppercase text-slate-400">Validation Top-1 Accuracy:</span>
+                            <span class="mono text-3xl font-bold text-emerald-400">97.20%</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-100 border border-slate-300 rounded-lg p-3 text-xs text-slate-600 italic">
+                        <strong>Assignment Hint:</strong> "Be wary of what you compare with, and of how your claim relates to the paper's."
+                    </div>
+                </div>
+            </div>
+
+            <!-- Speaker Notes -->
+            <div class="speaker-notes bg-amber-50/90 border-t border-amber-200 px-6 py-3.5 text-xs sm:text-sm text-amber-950">
+                <span class="font-bold uppercase tracking-wider text-amber-800 mr-2">[Speaker Notes — Person 1]:</span>
+                Touvron et al. showed in Table 10 that fine-tuning DeiT-S at 384x384 yields a +1.4% boost on ImageNet-1k. We test if this holds on Imagewoof under a strict 100,000-image cap, which allows 11 epochs over the 9,025 training photos. Crucially, we rejected the standard Imagewoof-320 package because upsampling 320-pixel images to 384 only feeds interpolation blur into the network; using full-size raw photos ensures we test genuine high-frequency optical information against our 97.20% zero-shot baseline.
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SLIDE 3: POSITIONAL EMBEDDING SURGERY
+             ========================================== -->
+        <section class="slide-card w-full max-w-6xl bg-white rounded-xl shadow-2xl border border-slate-200 flex-col justify-between overflow-hidden" data-presenter="Part 1: [Person 1 Name] (~1:15)">
+            <div class="bg-slate-900 text-white px-6 py-3.5 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <span class="bg-blue-600 text-xs font-bold px-2 py-0.5 rounded">PART 1 &bull; [Person 1 Name]</span>
+                    <h2 class="text-lg sm:text-xl font-bold">What Breaks at 384&times;384: Positional Embedding Surgery</h2>
+                </div>
+                <span class="text-xs text-slate-400 mono">Slide 3 / 11</span>
+            </div>
+
+            <div class="p-6 sm:p-8 flex-1 flex flex-col justify-between gap-5">
+                <!-- Patch Math Row -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-slate-50 border border-slate-200 rounded-lg p-4">
+                        <div class="text-xs font-bold uppercase text-slate-500 mb-1">1. Patch Grid @ 224&times;224</div>
+                        <div class="mono text-sm font-bold text-slate-900 mb-1">P = 16 &rarr; (224 / 16)&sup2; = 196 patches</div>
+                        <p class="text-xs text-slate-600">14&times;14 spatial grid + 2 special tokens (<code class="bg-slate-200 px-1 rounded">CLS</code>, <code class="bg-slate-200 px-1 rounded">DIST</code>) = <strong>198 tokens</strong>.</p>
+                    </div>
+                    <div class="bg-slate-50 border border-slate-200 rounded-lg p-4">
+                        <div class="text-xs font-bold uppercase text-slate-500 mb-1">2. Patch Grid @ 384&times;384</div>
+                        <div class="mono text-sm font-bold text-blue-700 mb-1">P = 16 &rarr; (384 / 16)&sup2; = 576 patches</div>
+                        <p class="text-xs text-slate-600">24&times;24 spatial grid + 2 special tokens (<code class="bg-slate-200 px-1 rounded">CLS</code>, <code class="bg-slate-200 px-1 rounded">DIST</code>) = <strong>578 tokens</strong>.</p>
+                    </div>
+                    <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                        <div class="text-xs font-bold uppercase text-red-700 mb-1">3. The Runtime Failure</div>
+                        <div class="mono text-xs font-bold text-red-900 mb-1">pos_embed: [1, 198, 384] vs [B, 578, 384]</div>
+                        <p class="text-xs text-red-800">Element-wise addition <code class="bg-red-100 px-1 rounded">x + pos_embed</code> fails immediately without manual 2D resizing.</p>
+                    </div>
+                </div>
+
+                <!-- 5-Step Pipeline Visual -->
+                <div class="bg-slate-900 text-slate-100 rounded-xl p-5 border border-slate-800">
+                    <div class="text-xs font-bold uppercase tracking-wider text-blue-400 mb-3">Manual 5-Step Tensor Resizing Pipeline (No Pre-Built timm Helpers)</div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-5 gap-3 text-xs">
+                        <div class="bg-slate-800/90 border border-slate-700 p-3 rounded-lg">
+                            <div class="font-bold text-blue-300 mb-1">Step 1: Slice Tokens</div>
+                            <div class="mono text-[11px] text-emerald-300 mb-1">[1, 198, 384]</div>
+                            <p class="text-slate-300 leading-snug">Separate <code class="text-amber-300">cls</code> (idx 0) &amp; <code class="text-amber-300">dist</code> (idx 1) from the 196 patch embeddings.</p>
+                        </div>
+                        <div class="bg-slate-800/90 border border-slate-700 p-3 rounded-lg">
+                            <div class="font-bold text-blue-300 mb-1">Step 2: 2D Reshape</div>
+                            <div class="mono text-[11px] text-emerald-300 mb-1">[1, 384, 14, 14]</div>
+                            <p class="text-slate-300 leading-snug">View <code class="text-slate-200">[1,196,384]</code> as <code class="text-slate-200">[1,14,14,384]</code> and permute channels first.</p>
+                        </div>
+                        <div class="bg-slate-800/90 border border-slate-700 p-3 rounded-lg">
+                            <div class="font-bold text-blue-300 mb-1">Step 3: Interpolate</div>
+                            <div class="mono text-[11px] text-emerald-300 mb-1">14&times;14 &rarr; 24&times;24</div>
+                            <p class="text-slate-300 leading-snug">Apply 2D <code class="text-amber-300">F.interpolate</code> (bicubic, <code class="text-slate-200">align_corners=False</code>).</p>
+                        </div>
+                        <div class="bg-slate-800/90 border border-slate-700 p-3 rounded-lg">
+                            <div class="font-bold text-blue-300 mb-1">Step 4: Re-Attach</div>
+                            <div class="mono text-[11px] text-emerald-300 mb-1">[1, 578, 384]</div>
+                            <p class="text-slate-300 leading-snug">Permute &amp; flatten to <code class="text-slate-200">[1,576,384]</code>; concat <code class="text-amber-300">[cls, dist, patches]</code>.</p>
+                        </div>
+                        <div class="bg-slate-800/90 border border-slate-700 p-3 rounded-lg">
+                            <div class="font-bold text-blue-300 mb-1">Step 5: Metadata Sync</div>
+                            <div class="mono text-[11px] text-emerald-300 mb-1">grid_size=(24,24)</div>
+                            <p class="text-slate-300 leading-snug">Update <code class="text-slate-200">patch_embed.img_size = (384,384)</code> to pass internal assertions.</p>
+                        </div>
+                    </div>
+
+                    <pre class="mt-4 bg-slate-950 text-slate-200 p-3 rounded border border-slate-800 text-[11px] sm:text-xs overflow-x-auto"><code>cls_dist_pe = pos_embed[:, :2, :]                                           # [1, 2, 384]   (Keep special tokens untouched)
+patch_pe    = pos_embed[:, 2:, :].reshape(1, 14, 14, 384).permute(0,3,1,2)  # [1, 384, 14, 14]
+patch_pe    = F.interpolate(patch_pe, size=(24, 24), mode='bicubic', align_corners=False)
+patch_pe    = patch_pe.permute(0, 2, 3, 1).reshape(1, 576, 384)             # [1, 576, 384]
+model.pos_embed = nn.Parameter(torch.cat([cls_dist_pe, patch_pe], dim=1))   # [1, 578, 384]</code></pre>
+                </div>
+            </div>
+
+            <!-- Speaker Notes -->
+            <div class="speaker-notes bg-amber-50/90 border-t border-amber-200 px-6 py-3.5 text-xs sm:text-sm text-amber-950">
+                <span class="font-bold uppercase tracking-wider text-amber-800 mr-2">[Speaker Notes — Person 1]:</span>
+                With a 16x16 patch size, moving from 224 to 384 increases the patch sequence from 196 to 576 tokens, causing an immediate shape mismatch against the pre-trained 198-token positional embedding. Following the assignment rules, we manually sliced off the non-spatial CLS and distillation tokens so they wouldn't corrupt spatial borders, reshaped the 196 patch embeddings into a 14x14 2D feature map, applied 2D interpolation to 24x24, flattened back to 576 tokens, and re-concatenated the special tokens to form a [1, 578, 384] parameter.
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SLIDE 4: 0-SHOT JUMP & THE 224 CONTROL
+             ========================================== -->
+        <section class="slide-card w-full max-w-6xl bg-white rounded-xl shadow-2xl border border-slate-200 flex-col justify-between overflow-hidden" data-presenter="Part 1: [Person 1 Name] (~1:15)">
+            <div class="bg-slate-900 text-white px-6 py-3.5 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <span class="bg-blue-600 text-xs font-bold px-2 py-0.5 rounded">PART 1 &bull; [Person 1 Name]</span>
+                    <h2 class="text-lg sm:text-xl font-bold">0-Shot Resolution Jump &amp; The Crucial 224 Control</h2>
+                </div>
+                <span class="text-xs text-slate-400 mono">Slide 4 / 11</span>
+            </div>
+
+            <div class="p-6 sm:p-8 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                <!-- Left: 0-Shot Interpolation Table -->
+                <div class="lg:col-span-6 bg-slate-50 border border-slate-200 rounded-xl p-5">
+                    <div class="text-xs font-bold uppercase text-slate-500 mb-1">Experiment 1A: Zero-Shot Resolution Jump</div>
+                    <h3 class="text-base font-bold text-slate-900 mb-3">0-Shot Accuracy @ 384&times;384 Across Interpolation Modes</h3>
+
+                    <table class="w-full text-left border-collapse text-xs sm:text-sm mb-4">
+                        <thead>
+                            <tr class="border-b-2 border-slate-300 text-slate-600">
+                                <th class="py-2">Eval Configuration</th>
+                                <th class="py-2 text-center">Res.</th>
+                                <th class="py-2 text-right">Val Acc</th>
+                                <th class="py-2 text-right">&Delta; vs 224</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-200 mono">
+                            <tr class="bg-white font-semibold">
+                                <td class="py-2.5 px-2 font-sans">Baseline DeiT-S (0-shot)</td>
+                                <td class="py-2.5 text-center">224&sup2;</td>
+                                <td class="py-2.5 text-right text-slate-900">97.20%</td>
+                                <td class="py-2.5 text-right text-slate-400">0.00%</td>
+                            </tr>
+                            <tr>
+                                <td class="py-2.5 px-2 font-sans">0-Shot Nearest Neighbor</td>
+                                <td class="py-2.5 text-center">384&sup2;</td>
+                                <td class="py-2.5 text-right text-red-600">96.56%</td>
+                                <td class="py-2.5 text-right text-red-600">-0.64%</td>
+                            </tr>
+                            <tr>
+                                <td class="py-2.5 px-2 font-sans">0-Shot Bilinear</td>
+                                <td class="py-2.5 text-center">384&sup2;</td>
+                                <td class="py-2.5 text-right text-red-600">96.72%</td>
+                                <td class="py-2.5 text-right text-red-600">-0.48%</td>
+                            </tr>
+                            <tr>
+                                <td class="py-2.5 px-2 font-sans">0-Shot Bicubic</td>
+                                <td class="py-2.5 text-center">384&sup2;</td>
+                                <td class="py-2.5 text-right text-red-600">96.69%</td>
+                                <td class="py-2.5 text-right text-red-600">-0.51%</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="bg-white border border-slate-200 rounded p-3 text-xs text-slate-700 leading-relaxed">
+                        <strong>Takeaway:</strong> Simply feeding more pixels <em>without weight adaptation</em> degrades accuracy by ~0.5%. Smooth interpolation (bilinear/bicubic) outperforms blocky nearest-neighbor steps, but frozen attention heads are uncalibrated for 576 tokens.
+                    </div>
+                </div>
+
+                <!-- Right: The 224 Control Experiment -->
+                <div class="lg:col-span-6 bg-blue-50/70 border-2 border-blue-600 rounded-xl p-5 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-xs font-bold uppercase text-blue-800">Experiment 1B: Answering the Task Hint</span>
+                            <span class="bg-blue-600 text-white text-[11px] font-bold px-2 py-0.5 rounded">Scientific Control</span>
+                        </div>
+                        <h3 class="text-base font-bold text-slate-900 mb-2">Isolating Domain Adaptation vs. Resolution Gain</h3>
+                        <p class="text-xs sm:text-sm text-slate-700 leading-relaxed mb-4">
+                            <strong>The Confounding Variable:</strong> Pre-trained DeiT-S outputs 1,000 ImageNet classes. If we fine-tune at 384&times;384 for 11 epochs and beat 97.20%, did the gain come from <em>seeing more pixels</em> or simply from <em>11 epochs of dog-breed specialization</em>?
+                        </p>
+
+                        <!-- Control Result Card -->
+                        <div class="bg-white border border-blue-200 rounded-lg p-4 mb-4 shadow-sm">
+                            <div class="text-xs font-bold uppercase text-slate-500 mb-2">Control Fine-Tuning @ 224&times;224 (11 Epochs, 99,275 Images)</div>
+                            <div class="grid grid-cols-3 gap-2 text-center items-center">
+                                <div>
+                                    <div class="text-xs text-slate-500">0-Shot @ 224</div>
+                                    <div class="mono text-lg font-bold text-slate-700">97.20%</div>
+                                </div>
+                                <div class="text-blue-600 font-bold text-lg">&rarr;</div>
+                                <div class="bg-blue-50 p-2 rounded border border-blue-200">
+                                    <div class="text-xs text-blue-800 font-semibold">Control FT @ 224</div>
+                                    <div class="mono text-xl font-bold text-blue-700">97.30% <span class="text-xs">(+0.10%)</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-900 text-white rounded-lg p-3.5 text-xs sm:text-sm">
+                        <span class="text-amber-400 font-bold uppercase">Methodological Rule:</span>
+                        Domain adaptation alone accounts for <strong>+0.10%</strong>. Therefore, <strong>97.30%</strong> is our true benchmark. Any 384&times;384 method must exceed <strong>97.30%</strong> to claim that resolution helps.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Speaker Notes -->
+            <div class="speaker-notes bg-amber-50/90 border-t border-amber-200 px-6 py-3.5 text-xs sm:text-sm text-amber-950">
+                <span class="font-bold uppercase tracking-wider text-amber-800 mr-2">[Speaker Notes — Person 1]:</span>
+                Evaluating at 384x384 zero-shot immediately drops accuracy by roughly half a percent across all interpolation modes—down to 96.69% with bicubic—proving that higher resolution hurts if weights remain frozen. More importantly, to address the prompt's hint—"be wary of what you compare with"—we ran a controlled 11-epoch fine-tuning at the original 224x224 resolution. That control run reached 97.30%, showing that +0.10% comes purely from adapting to the 10 Imagewoof dog breeds, making 97.30% the real bar to beat. I now hand over to [Person 2 Name].
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SLIDE 5: LINEAR PROBING (B1 & B2)
+             ========================================== -->
+        <section class="slide-card w-full max-w-6xl bg-white rounded-xl shadow-2xl border border-slate-200 flex-col justify-between overflow-hidden" data-presenter="Part 2: [Person 2 Name] (~1:15)">
+            <div class="bg-slate-900 text-white px-6 py-3.5 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <span class="bg-indigo-600 text-xs font-bold px-2 py-0.5 rounded">PART 2 &bull; [Person 2 Name]</span>
+                    <h2 class="text-lg sm:text-xl font-bold">Parameter-Efficient Adaptation: Linear Probing (B1 &amp; B2)</h2>
+                </div>
+                <span class="text-xs text-slate-400 mono">Slide 5 / 11</span>
+            </div>
+
+            <div class="p-6 sm:p-8 flex-1 flex flex-col justify-between gap-5">
+                <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-3.5 text-xs sm:text-sm text-slate-800">
+                    <strong>Motivation:</strong> Can we recover the 0-shot accuracy drop and exploit 384&times;384 resolution by training only lightweight output heads or spatial embeddings, avoiding full 22M-parameter backpropagation?
+                </div>
+
+                <!-- Two Columns for B1 and B2 -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1">
+                    <!-- Solution B1 -->
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-5 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-xs font-bold uppercase text-indigo-700 bg-indigo-100 px-2.5 py-0.5 rounded">Solution B1</span>
+                                <span class="mono text-xs text-slate-500">7,700 params (0.04%)</span>
+                            </div>
+                            <h3 class="text-base font-bold text-slate-900 mb-2">Linear Probe (Classification Heads Only)</h3>
+                            <ul class="text-xs sm:text-sm text-slate-700 space-y-1.5 list-disc list-inside mb-4">
+                                <li>Freeze entire Transformer backbone + interpolated <code class="bg-slate-200 px-1 rounded">pos_embed</code>.</li>
+                                <li>Train only <code class="bg-slate-200 px-1 rounded">head</code> and <code class="bg-slate-200 px-1 rounded">head_dist</code> on the 10 dog classes.</li>
+                                <li>Optimizer: AdamW (<code class="bg-slate-200 px-1 rounded">lr=1e-3</code>), Cosine Annealing, 11 epochs.</li>
+                            </ul>
+                        </div>
+                        <div class="bg-white border border-slate-200 rounded-lg p-3.5 flex items-center justify-between">
+                            <div>
+                                <div class="text-xs text-slate-500">Validation Accuracy @ 384</div>
+                                <div class="text-xs text-amber-700 font-medium">Recovers +0.43% over 0-shot (96.69%)</div>
+                            </div>
+                            <div class="text-right mono">
+                                <div class="text-2xl font-bold text-slate-900">97.12%</div>
+                                <div class="text-xs text-red-600">-0.08% vs 224 base</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Solution B2 -->
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-5 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-xs font-bold uppercase text-indigo-700 bg-indigo-100 px-2.5 py-0.5 rounded">Solution B2</span>
+                                <span class="mono text-xs text-slate-500">229,652 params (1.05%)</span>
+                            </div>
+                            <h3 class="text-base font-bold text-slate-900 mb-2">Linear Probe + Positional Embedding Calibration</h3>
+                            <ul class="text-xs sm:text-sm text-slate-700 space-y-1.5 list-disc list-inside mb-4">
+                                <li><strong>Hypothesis:</strong> Bicubic 24&times;24 <code class="bg-slate-200 px-1 rounded">pos_embed</code> is smooth but uncalibrated to frozen attention heads.</li>
+                                <li>Unfreeze <code class="bg-slate-200 px-1 rounded">pos_embed</code> (<code class="bg-slate-200 px-1 rounded">lr=1e-4</code>) alongside heads (<code class="bg-slate-200 px-1 rounded">lr=1e-3</code>).</li>
+                                <li>Backbone blocks 0–11 remain completely frozen.</li>
+                            </ul>
+                        </div>
+                        <div class="bg-white border border-slate-200 rounded-lg p-3.5 flex items-center justify-between">
+                            <div>
+                                <div class="text-xs text-slate-500">Validation Accuracy @ 384</div>
+                                <div class="text-xs text-red-600 font-medium">Worse than keeping PE frozen (B1)!</div>
+                            </div>
+                            <div class="text-right mono">
+                                <div class="text-2xl font-bold text-slate-900">97.07%</div>
+                                <div class="text-xs text-red-600">-0.13% vs 224 base</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Diagnostic Insight Box -->
+                <div class="bg-slate-900 text-white rounded-lg p-4 text-xs sm:text-sm flex items-center gap-3">
+                    <span class="bg-amber-500 text-slate-950 font-bold px-2 py-1 rounded text-xs uppercase shrink-0">Diagnostic Insight</span>
+                    <p class="text-slate-200">
+                        Why did B2 underperform B1? Updating <code class="text-amber-300">pos_embed</code> at the input layer while keeping all 12 self-attention <code class="text-amber-300">W_Q, W_K</code> projection matrices frozen causes <strong>coordinate drift</strong>—shifting token representations out of the subspace expected by frozen intermediate blocks.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Speaker Notes -->
+            <div class="speaker-notes bg-amber-50/90 border-t border-amber-200 px-6 py-3.5 text-xs sm:text-sm text-amber-950">
+                <span class="font-bold uppercase tracking-wider text-amber-800 mr-2">[Speaker Notes — Person 2]:</span>
+                In Part 2, we asked whether we can adapt to 384x384 parameter-efficiently without retraining all 22 million weights. In Solution B1, training only the dual classification heads—just 0.04% of the model—recovered accuracy from 96.69% to 97.12%, still falling short of the 97.20% baseline. In Solution B2, we also unfroze the interpolated positional embedding, expecting spatial calibration to help; instead, accuracy slipped to 97.07% because shifting input coordinates against frozen self-attention projections induces coordinate drift.
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SLIDE 6: SOLUTION D — SELECTIVE LAYER FREEZING
+             ========================================== -->
+        <section class="slide-card w-full max-w-6xl bg-white rounded-xl shadow-2xl border border-slate-200 flex-col justify-between overflow-hidden" data-presenter="Part 2: [Person 2 Name] (~1:15)">
+            <div class="bg-slate-900 text-white px-6 py-3.5 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <span class="bg-indigo-600 text-xs font-bold px-2 py-0.5 rounded">PART 2 &bull; [Person 2 Name]</span>
+                    <h2 class="text-lg sm:text-xl font-bold">Solution D: Selective Layer Freezing &amp; Hard Distillation</h2>
+                </div>
+                <span class="text-xs text-slate-400 mono">Slide 6 / 11</span>
+            </div>
+
+            <div class="p-6 sm:p-8 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                <!-- Left: Architectural Setup -->
+                <div class="lg:col-span-7 space-y-4">
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                        <div class="text-xs font-bold uppercase text-indigo-700 mb-1">Architectural Hypothesis</div>
+                        <p class="text-xs sm:text-sm text-slate-700 leading-relaxed">
+                            Early ViT blocks (0–7) extract local, resolution-agnostic edge and texture primitives. Late blocks (8–11) aggregate global spatial context over the 24&times;24 grid. Unfreezing the top 4 blocks alongside <code class="bg-slate-200 px-1 rounded">pos_embed</code> should resolve coordinate drift.
+                        </p>
+                    </div>
+
+                    <!-- Block Diagram -->
+                    <div class="bg-slate-900 text-white rounded-xl p-4 border border-slate-800">
+                        <div class="text-xs font-bold uppercase text-slate-400 mb-3">Parameter Allocation (7.33M Trainable / 33.6% of Model)</div>
+                        <div class="grid grid-cols-3 gap-2.5 text-xs text-center">
+                            <div class="bg-slate-800 border border-slate-700 p-3 rounded">
+                                <div class="text-slate-400 font-bold mb-1">FROZEN (66.4%)</div>
+                                <div class="mono text-[11px] text-slate-300">patch_embed</div>
+                                <div class="mono text-[11px] text-slate-300">Blocks 0 &ndash; 7</div>
+                                <div class="text-[10px] text-slate-400 mt-1">lr = 0</div>
+                            </div>
+                            <div class="bg-indigo-950 border border-indigo-500 p-3 rounded">
+                                <div class="text-indigo-300 font-bold mb-1">TRAINABLE BACKBONE</div>
+                                <div class="mono text-[11px] text-white">pos_embed + norm</div>
+                                <div class="mono text-[11px] text-white">Blocks 8 &ndash; 11</div>
+                                <div class="mono text-[10px] text-emerald-400 mt-1">lr = 5e-5</div>
+                            </div>
+                            <div class="bg-indigo-900 border border-indigo-400 p-3 rounded">
+                                <div class="text-indigo-200 font-bold mb-1">TRAINABLE HEADS</div>
+                                <div class="mono text-[11px] text-white">head (CLS)</div>
+                                <div class="mono text-[11px] text-white">head_dist (DIST)</div>
+                                <div class="mono text-[10px] text-emerald-400 mt-1">lr = 5e-4</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Hard Distillation Loss -->
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                        <div class="text-xs font-bold uppercase text-slate-500 mb-1.5">DeiT Hard Knowledge Distillation Objective</div>
+                        <p class="text-xs text-slate-700 mb-2">
+                            To preserve the inductive bias of the <code class="bg-slate-200 px-1 rounded">dist_token</code>, we run a frozen <strong>DeiT-S @ 224&times;224 teacher</strong> in parallel to generate hard pseudo-labels <code class="bg-slate-200 px-1 rounded">y_teacher</code>:
+                        </p>
+                        <div class="bg-white border border-slate-200 p-2.5 rounded mono text-xs text-center text-slate-900 font-semibold">
+                            &Lscr;<sub>total</sub> = 0.5 &middot; CE<sub>smooth=0.1</sub>(z<sub>cls</sub>, y<sub>true</sub>) + 0.5 &middot; CE<sub>hard</sub>(z<sub>dist</sub>, y<sub>teacher@224</sub>)
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Results & Analysis -->
+                <div class="lg:col-span-5 flex flex-col justify-between space-y-4">
+                    <div class="bg-slate-900 text-white rounded-xl p-5 border border-slate-800">
+                        <div class="text-xs font-bold uppercase text-indigo-400 mb-1">Solution D Result (11 Epochs)</div>
+                        <div class="text-sm text-slate-300 mb-4">Blocks 8–11 + PE + Dual Heads + Teacher@224</div>
+                        <div class="flex items-baseline justify-between border-t border-slate-800 pt-3 mb-2">
+                            <span class="text-xs uppercase text-slate-400">Validation Accuracy:</span>
+                            <span class="mono text-3xl font-bold text-amber-400">97.15%</span>
+                        </div>
+                        <div class="flex justify-between text-xs mono text-slate-400">
+                            <span>vs 224 0-Shot (97.20%): <strong class="text-red-400">-0.05%</strong></span>
+                            <span>vs 224 Control (97.30%): <strong class="text-red-400">-0.15%</strong></span>
+                        </div>
+                    </div>
+
+                    <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs sm:text-sm text-slate-800 space-y-2">
+                        <div class="font-bold text-amber-900 uppercase text-xs">Why Did Solution D Still Ceiling at 97.15%?</div>
+                        <p class="leading-relaxed">
+                            1. <strong>Early Attention Bottleneck:</strong> Blocks 0–7 are NOT purely local filters; their self-attention layers still compute global 576&times;576 softmax maps with frozen weights calibrated for 196 tokens.
+                        </p>
+                        <p class="leading-relaxed">
+                            2. <strong>Teacher Ceiling:</strong> Hard distillation from a 224&times;224 teacher anchors the student to 224-level representations rather than letting it discover finer 384&times;384 details.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Speaker Notes -->
+            <div class="speaker-notes bg-amber-50/90 border-t border-amber-200 px-6 py-3.5 text-xs sm:text-sm text-amber-950">
+                <span class="font-bold uppercase tracking-wider text-amber-800 mr-2">[Speaker Notes — Person 2]:</span>
+                To fix coordinate drift while keeping training lightweight, Solution D unfroze the last four Transformer blocks—about 33.6% of the model—alongside the positional embedding and heads, coupled with hard distillation from a frozen 224x224 teacher. While this raised accuracy to 97.15%, it still failed to beat our 97.20% zero-shot baseline or the 97.30% control. Even early Vision Transformer blocks compute global self-attention, so keeping blocks 0 through 7 frozen bottlenecks the representation before it ever reaches block 8.
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SLIDE 7: PART 2 SYNTHESIS — WHY PARTIAL TUNING FAILS
+             ========================================== -->
+        <section class="slide-card w-full max-w-6xl bg-white rounded-xl shadow-2xl border border-slate-200 flex-col justify-between overflow-hidden" data-presenter="Part 2: [Person 2 Name] (~1:00)">
+            <div class="bg-slate-900 text-white px-6 py-3.5 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <span class="bg-indigo-600 text-xs font-bold px-2 py-0.5 rounded">PART 2 &bull; [Person 2 Name]</span>
+                    <h2 class="text-lg sm:text-xl font-bold">Part 2 Synthesis: Why Partial Tuning Underperforms at 384&times;384</h2>
+                </div>
+                <span class="text-xs text-slate-400 mono">Slide 7 / 11</span>
+            </div>
+
+            <div class="p-6 sm:p-8 flex-1 flex flex-col justify-between gap-5">
+                <!-- Summary Table of Partial Methods -->
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                    <div class="text-xs font-bold uppercase text-slate-500 mb-2">Comparative Summary: Parameter-Efficient &amp; Partial Adaptation @ 384&times;384</div>
+                    <table class="w-full text-left border-collapse text-xs sm:text-sm">
+                        <thead>
+                            <tr class="border-b-2 border-slate-300 text-slate-700">
+                                <th class="py-2 px-2">Method</th>
+                                <th class="py-2 text-center">Res.</th>
+                                <th class="py-2 text-right">Trainable Params</th>
+                                <th class="py-2 text-right">Val Acc</th>
+                                <th class="py-2 text-right">vs 224 Base (97.20%)</th>
+                                <th class="py-2 text-right">vs 224 Control (97.30%)</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-200 mono">
+                            <tr class="bg-white">
+                                <td class="py-2 px-2 font-sans font-semibold">Baseline DeiT-S (0-Shot)</td>
+                                <td class="py-2 text-center">224&sup2;</td>
+                                <td class="py-2 text-right">0 (0.0%)</td>
+                                <td class="py-2 text-right font-bold">97.20%</td>
+                                <td class="py-2 text-right text-slate-400">0.00%</td>
+                                <td class="py-2 text-right text-red-600">-0.10%</td>
+                            </tr>
+                            <tr>
+                                <td class="py-2 px-2 font-sans">0-Shot Bicubic</td>
+                                <td class="py-2 text-center">384&sup2;</td>
+                                <td class="py-2 text-right">0 (0.0%)</td>
+                                <td class="py-2 text-right">96.69%</td>
+                                <td class="py-2 text-right text-red-600">-0.51%</td>
+                                <td class="py-2 text-right text-red-600">-0.61%</td>
+                            </tr>
+                            <tr>
+                                <td class="py-2 px-2 font-sans">Solution B1: Linear Probe (Heads)</td>
+                                <td class="py-2 text-center">384&sup2;</td>
+                                <td class="py-2 text-right">7.7K (0.04%)</td>
+                                <td class="py-2 text-right">97.12%</td>
+                                <td class="py-2 text-right text-red-600">-0.08%</td>
+                                <td class="py-2 text-right text-red-600">-0.18%</td>
+                            </tr>
+                            <tr>
+                                <td class="py-2 px-2 font-sans">Solution B2: Probe + pos_embed</td>
+                                <td class="py-2 text-center">384&sup2;</td>
+                                <td class="py-2 text-right">229.7K (1.05%)</td>
+                                <td class="py-2 text-right">97.07%</td>
+                                <td class="py-2 text-right text-red-600">-0.13%</td>
+                                <td class="py-2 text-right text-red-600">-0.23%</td>
+                            </tr>
+                            <tr class="bg-indigo-50/60 font-semibold">
+                                <td class="py-2 px-2 font-sans">Solution D: Blocks 8–11 + PE + Distil</td>
+                                <td class="py-2 text-center">384&sup2;</td>
+                                <td class="py-2 text-right">7.33M (33.6%)</td>
+                                <td class="py-2 text-right text-indigo-900">97.15%</td>
+                                <td class="py-2 text-right text-red-600">-0.05%</td>
+                                <td class="py-2 text-right text-red-600">-0.15%</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Mathematical Mechanism Explanation -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div class="bg-red-50 border border-red-200 rounded-xl p-4">
+                        <div class="text-xs font-bold uppercase text-red-800 mb-1">Verdict for Partial Adaptation</div>
+                        <div class="text-base font-bold text-slate-900 mb-2">Under Partial Tuning, Seeing More Pixels Hurts.</div>
+                        <p class="text-xs sm:text-sm text-slate-700 leading-relaxed">
+                            Every partial tuning strategy (0.04% up to 33.6% of parameters) finished below both the <strong>97.20%</strong> zero-shot baseline and the <strong>97.30%</strong> 224 control.
+                        </p>
+                    </div>
+
+                    <div class="bg-slate-900 text-white rounded-xl p-4">
+                        <div class="text-xs font-bold uppercase text-indigo-400 mb-1">Root Cause: Quadratic Attention Entropy Shift</div>
+                        <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                            Self-attention scales as <span class="mono text-emerald-400">O(N&sup2;)</span>: attention matrices jump from <span class="mono text-white">198&times;198 (39,204 pairs)</span> to <span class="mono text-white">578&times;578 (334,084 pairs)</span>—an <strong>8.5&times; increase</strong>. Softmax probability mass is diluted across 3&times; more patches in <em>every</em> layer, requiring global recalibration of all 12 blocks.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Speaker Notes -->
+            <div class="speaker-notes bg-amber-50/90 border-t border-amber-200 px-6 py-3.5 text-xs sm:text-sm text-amber-950">
+                <span class="font-bold uppercase tracking-wider text-amber-800 mr-2">[Speaker Notes — Person 2]:</span>
+                Summarizing Part 2: if you only partially adapt a Vision Transformer, seeing more pixels does not help—our best partial setup reached 97.15%, still below the 97.20% baseline. Because self-attention scales quadratically with token count, jumping from 198 to 578 tokens expands the attention matrix by 8.5x and alters softmax entropy in every single block from layer 0 upward. I now pass to [Person 3 Name] to show what happens when we unlock the full network.
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SLIDE 8: SOLUTION C — FULL FINE-TUNING @ 384
+             ========================================== -->
+        <section class="slide-card w-full max-w-6xl bg-white rounded-xl shadow-2xl border border-slate-200 flex-col justify-between overflow-hidden" data-presenter="Part 3: [Person 3 Name] (~1:00)">
+            <div class="bg-slate-900 text-white px-6 py-3.5 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <span class="bg-emerald-600 text-xs font-bold px-2 py-0.5 rounded">PART 3 &bull; [Person 3 Name]</span>
+                    <h2 class="text-lg sm:text-xl font-bold">Solution C: Full End-to-End Fine-Tuning @ 384&times;384</h2>
+                </div>
+                <span class="text-xs text-slate-400 mono">Slide 8 / 11</span>
+            </div>
+
+            <div class="p-6 sm:p-8 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                <!-- Left: Hyperparameter Recipe -->
+                <div class="lg:col-span-7 space-y-4">
+                    <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+                        <div class="text-xs font-bold uppercase text-emerald-800 mb-1">Hypothesis &amp; Strategy</div>
+                        <p class="text-xs sm:text-sm text-slate-800 leading-relaxed">
+                            Since 576-patch sequences shift query-key distributions across all 12 blocks, we unfreeze <strong>100% of parameters (21.8M)</strong>, using differential learning rates so resized components adapt rapidly without destroying pre-trained backbone features.
+                        </p>
+                    </div>
+
+                    <!-- Differential LR Table -->
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                        <div class="text-xs font-bold uppercase text-slate-500 mb-2">Differential Learning Rate &amp; Stability Recipe (AdamW, wd=1e-4)</div>
+                        <div class="grid grid-cols-3 gap-3 text-center mb-3">
+                            <div class="bg-white p-3 rounded border border-slate-200">
+                                <div class="text-xs font-semibold text-slate-500">Backbone (Blocks 0–11)</div>
+                                <div class="mono text-base font-bold text-slate-900 mt-1">lr = 1e-5</div>
+                                <div class="text-[11px] text-slate-500 mt-0.5">Preserves ImageNet features</div>
+                            </div>
+                            <div class="bg-white p-3 rounded border border-emerald-300">
+                                <div class="text-xs font-semibold text-emerald-800">Interpolated pos_embed</div>
+                                <div class="mono text-base font-bold text-emerald-700 mt-1">lr = 1e-4 (10&times;)</div>
+                                <div class="text-[11px] text-slate-500 mt-0.5">Rapid 24&times;24 grid alignment</div>
+                            </div>
+                            <div class="bg-white p-3 rounded border border-emerald-300">
+                                <div class="text-xs font-semibold text-emerald-800">head &amp; head_dist</div>
+                                <div class="mono text-base font-bold text-emerald-700 mt-1">lr = 1e-4 (10&times;)</div>
+                                <div class="text-[11px] text-slate-500 mt-0.5">Fast 10-class convergence</div>
+                            </div>
+                        </div>
+                        <div class="text-xs text-slate-600 flex flex-wrap gap-x-4 gap-y-1 pt-2 border-t border-slate-200">
+                            <span>&bull; <strong>Schedule:</strong> Cosine Annealing (11 epochs = 99,275 imgs)</span>
+                            <span>&bull; <strong>Grad Clip:</strong> max_norm = 1.0</span>
+                            <span>&bull; <strong>Precision:</strong> FP16 AMP</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Trajectory & Result -->
+                <div class="lg:col-span-5 space-y-4">
+                    <div class="bg-slate-900 text-white rounded-xl p-5 border-2 border-emerald-500 shadow-lg">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-xs font-bold uppercase text-emerald-400">Solution C Final Result</span>
+                            <span class="bg-emerald-600 text-white text-[11px] font-bold px-2 py-0.5 rounded">Best Overall</span>
+                        </div>
+                        <div class="text-xs text-slate-300 mb-3">Full End-to-End Fine-Tuning @ 384&times;384</div>
+                        <div class="flex items-baseline justify-between border-t border-slate-800 pt-3 mb-3">
+                            <span class="text-xs uppercase text-slate-400">Validation Accuracy:</span>
+                            <span class="mono text-4xl font-bold text-emerald-400">97.58%</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800 text-xs mono">
+                            <div class="bg-slate-800/80 p-2 rounded">
+                                <div class="text-slate-400 text-[10px]">vs 224 0-Shot (97.20%)</div>
+                                <div class="text-emerald-400 font-bold text-sm">+0.38%</div>
+                            </div>
+                            <div class="bg-slate-800/80 p-2 rounded">
+                                <div class="text-slate-400 text-[10px]">vs 224 Control FT (97.30%)</div>
+                                <div class="text-emerald-400 font-bold text-sm">+0.28% (True Gain)</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Training Trajectory Card -->
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                        <div class="text-xs font-bold uppercase text-slate-500 mb-2">Validation Trajectory Across 11 Epochs</div>
+                        <div class="space-y-2 text-xs mono">
+                            <div class="flex items-center justify-between">
+                                <span class="text-slate-600">Epoch 0 (0-Shot Bicubic):</span>
+                                <span class="text-red-600 font-semibold">96.69%</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-slate-600">Epoch 1 (Immediate Recovery):</span>
+                                <span class="text-emerald-700 font-semibold">97.38%</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-slate-600">Epoch 4 (Peak Validation):</span>
+                                <span class="text-emerald-700 font-bold">97.63%</span>
+                            </div>
+                            <div class="flex items-center justify-between border-t border-slate-200 pt-1.5">
+                                <span class="text-slate-900 font-bold">Epoch 11 (Final Converged):</span>
+                                <span class="text-emerald-700 font-bold">97.58%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Speaker Notes -->
+            <div class="speaker-notes bg-amber-50/90 border-t border-amber-200 px-6 py-3.5 text-xs sm:text-sm text-amber-950">
+                <span class="font-bold uppercase tracking-wider text-amber-800 mr-2">[Speaker Notes — Person 3]:</span>
+                In Solution C, we unfroze all 21.8 million parameters and applied differential learning rates: 1e-5 on the Transformer blocks to preserve pre-trained features, and a 10x higher rate of 1e-4 on the interpolated positional embeddings and heads. Already by Epoch 1, validation accuracy jumped from 96.69% to 97.38%, peaking at 97.63% and stabilizing at 97.58% at Epoch 11. This beats the zero-shot baseline by +0.38% and, crucially, beats our 224 fine-tuning control by +0.28%, proving that higher resolution genuinely helps once all attention layers can adapt.
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SLIDE 9: SOLUTION E — PROGRESSIVE CURRICULUM
+             ========================================== -->
+        <section class="slide-card w-full max-w-6xl bg-white rounded-xl shadow-2xl border border-slate-200 flex-col justify-between overflow-hidden" data-presenter="Part 3: [Person 3 Name] (~1:00)">
+            <div class="bg-slate-900 text-white px-6 py-3.5 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <span class="bg-emerald-600 text-xs font-bold px-2 py-0.5 rounded">PART 3 &bull; [Person 3 Name]</span>
+                    <h2 class="text-lg sm:text-xl font-bold">Solution E: Progressive Resolution Curriculum (224 &rarr; 384)</h2>
+                </div>
+                <span class="text-xs text-slate-400 mono">Slide 9 / 11</span>
+            </div>
+
+            <div class="p-6 sm:p-8 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                <!-- Left: Compounding Blur Fix & Schedule -->
+                <div class="lg:col-span-7 space-y-4">
+                    <div class="bg-amber-50 border border-amber-300 rounded-xl p-4">
+                        <div class="text-xs font-bold uppercase text-amber-900 mb-1">Engineering Pitfall &amp; Clean Fix: Avoiding Compounding Blur</div>
+                        <p class="text-xs sm:text-sm text-slate-800 leading-relaxed mb-2">
+                            <strong>The Trap:</strong> Sequentially interpolating <code class="bg-amber-100 px-1 rounded">14&times;14 &rarr; 16&times;16 &rarr; 20&times;20 &rarr; 24&times;24</code> repeatedly resamples already-smoothed tensors, compounding bicubic blur and degrading high-frequency positional signals.
+                        </p>
+                        <p class="text-xs sm:text-sm text-slate-800 leading-relaxed">
+                            <strong>Our Fix:</strong> Cache the pristine <code class="bg-amber-100 px-1 rounded">14&times;14</code> base positional embedding before training and interpolate <em>directly from 14&times;14</em> at each resolution transition.
+                        </p>
+                    </div>
+
+                    <!-- 4-Stage Schedule Table -->
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                        <div class="text-xs font-bold uppercase text-slate-500 mb-2">4-Stage Curriculum Schedule (Total = 11 Epochs / 99,275 Images)</div>
+                        <table class="w-full text-left border-collapse text-xs sm:text-sm">
+                            <thead>
+                                <tr class="border-b-2 border-slate-300 text-slate-600">
+                                    <th class="py-1.5">Stage</th>
+                                    <th class="py-1.5 text-center">Res. (Grid)</th>
+                                    <th class="py-1.5 text-center">Epochs</th>
+                                    <th class="py-1.5 text-right">Backbone LR</th>
+                                    <th class="py-1.5 text-right">Stage Val Acc</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-200 mono">
+                                <tr>
+                                    <td class="py-2 font-sans font-medium">Stage 1</td>
+                                    <td class="py-2 text-center">224&sup2; (14&times;14)</td>
+                                    <td class="py-2 text-center">4 ep</td>
+                                    <td class="py-2 text-right">5e-5</td>
+                                    <td class="py-2 text-right">96.33%</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-2 font-sans font-medium">Stage 2</td>
+                                    <td class="py-2 text-center">256&sup2; (16&times;16)</td>
+                                    <td class="py-2 text-center">4 ep</td>
+                                    <td class="py-2 text-right">2e-5</td>
+                                    <td class="py-2 text-right">97.12%</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-2 font-sans font-medium">Stage 3</td>
+                                    <td class="py-2 text-center">320&sup2; (20&times;20)</td>
+                                    <td class="py-2 text-center">1 ep</td>
+                                    <td class="py-2 text-right">1e-5</td>
+                                    <td class="py-2 text-right">97.00%</td>
+                                </tr>
+                                <tr class="bg-emerald-50 font-bold">
+                                    <td class="py-2 font-sans">Stage 4 (Final)</td>
+                                    <td class="py-2 text-center">384&sup2; (24&times;24)</td>
+                                    <td class="py-2 text-center">2 ep</td>
+                                    <td class="py-2 text-right">5e-6</td>
+                                    <td class="py-2 text-right text-emerald-700">97.38%</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Right: Comparison & Budget Tradeoff -->
+                <div class="lg:col-span-5 space-y-4">
+                    <div class="bg-slate-900 text-white rounded-xl p-5 border border-slate-800">
+                        <div class="text-xs font-bold uppercase text-emerald-400 mb-1">Solution E Final Result</div>
+                        <div class="text-xs text-slate-300 mb-3">Progressive Resolution Curriculum (224 &rarr; 256 &rarr; 320 &rarr; 384)</div>
+                        <div class="flex items-baseline justify-between border-t border-slate-800 pt-3 mb-2">
+                            <span class="text-xs uppercase text-slate-400">Validation Accuracy @ 384:</span>
+                            <span class="mono text-3xl font-bold text-emerald-400">97.38%</span>
+                        </div>
+                        <div class="flex justify-between text-xs mono text-slate-300">
+                            <span>vs 224 Base: <strong class="text-emerald-400">+0.18%</strong></span>
+                            <span>vs 224 Control: <strong class="text-emerald-400">+0.08%</strong></span>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 text-xs sm:text-sm text-slate-700 space-y-2">
+                        <div class="font-bold text-slate-900 uppercase text-xs">Why Did Direct 384 FT (97.58%) Beat Progressive (97.38%)?</div>
+                        <p class="leading-relaxed">
+                            1. <strong>Budget Fragmentation:</strong> Under the strict 11-epoch cap, spending 9 epochs at intermediate resolutions leaves only <strong>2 epochs at 384&times;384</strong>—insufficient for full convergence on the 24&times;24 grid.
+                        </p>
+                        <p class="leading-relaxed">
+                            2. <strong>Repeated Transition Shocks:</strong> Every resolution jump resets positional embeddings from the 14&times;14 base, forcing the backbone to re-adapt 3 separate times instead of once.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Speaker Notes -->
+            <div class="speaker-notes bg-amber-50/90 border-t border-amber-200 px-6 py-3.5 text-xs sm:text-sm text-amber-950">
+                <span class="font-bold uppercase tracking-wider text-amber-800 mr-2">[Speaker Notes — Person 3]:</span>
+                In Solution E, we tested whether easing the resolution shock via a progressive curriculum—224 to 256, 320, and finally 384—would outperform jumping straight to 384. To prevent compounding interpolation blur across stages, we cached the original 14x14 positional embedding and interpolated freshly from that base at each step. While Solution E reached 97.38%—beating both the 97.20% baseline and 97.30% control—it trailed Solution C's 97.58% because our 11-epoch cap left only 2 epochs at the final 384x384 target resolution.
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SLIDE 10: MASTER COMPARISON TABLE & FINAL ANSWER
+             ========================================== -->
+        <section class="slide-card w-full max-w-6xl bg-white rounded-xl shadow-2xl border border-slate-200 flex-col justify-between overflow-hidden" data-presenter="Part 3: [Person 3 Name] (~0:45)">
+            <div class="bg-slate-900 text-white px-6 py-3.5 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <span class="bg-emerald-600 text-xs font-bold px-2 py-0.5 rounded">PART 3 &bull; [Person 3 Name]</span>
+                    <h2 class="text-lg sm:text-xl font-bold">Master Comparison Matrix &amp; The Definitive Answer</h2>
+                </div>
+                <span class="text-xs text-slate-400 mono">Slide 10 / 11</span>
+            </div>
+
+            <div class="p-6 sm:p-8 flex-1 flex flex-col justify-between gap-4">
+                <!-- Master Table -->
+                <div class="overflow-x-auto border border-slate-200 rounded-xl">
+                    <table class="w-full text-left border-collapse text-xs sm:text-sm">
+                        <thead>
+                            <tr class="bg-slate-100 border-b-2 border-slate-300 text-slate-700">
+                                <th class="py-2.5 px-3">Method / Configuration</th>
+                                <th class="py-2.5 px-2 text-center">Resolution</th>
+                                <th class="py-2.5 px-2 text-right">Trainable Params</th>
+                                <th class="py-2.5 px-3 text-right">Val Accuracy</th>
+                                <th class="py-2.5 px-3 text-right">vs 224 0-Shot (97.20%)</th>
+                                <th class="py-2.5 px-3 text-right">vs 224 Control FT (97.30%)</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-200 mono">
+                            <tr class="bg-white">
+                                <td class="py-2 px-3 font-sans font-medium">Baseline DeiT-S (0-Shot)</td>
+                                <td class="py-2 px-2 text-center">224&times;224</td>
+                                <td class="py-2 px-2 text-right">0 (0%)</td>
+                                <td class="py-2 px-3 text-right font-bold">97.20%</td>
+                                <td class="py-2 px-3 text-right text-slate-400">+0.00%</td>
+                                <td class="py-2 px-3 text-right text-red-600">-0.10%</td>
+                            </tr>
+                            <tr>
+                                <td class="py-2 px-3 font-sans">0-Shot Bicubic</td>
+                                <td class="py-2 px-2 text-center">384&times;384</td>
+                                <td class="py-2 px-2 text-right">0 (0%)</td>
+                                <td class="py-2 px-3 text-right text-red-600">96.69%</td>
+                                <td class="py-2 px-3 text-right text-red-600">-0.51%</td>
+                                <td class="py-2 px-3 text-right text-red-600">-0.61%</td>
+                            </tr>
+                            <tr class="bg-blue-50/70 font-semibold">
+                                <td class="py-2 px-3 font-sans text-blue-950">Control Fine-Tuning (Domain Control)</td>
+                                <td class="py-2 px-2 text-center text-blue-950">224&times;224</td>
+                                <td class="py-2 px-2 text-right text-blue-950">21.8M (100%)</td>
+                                <td class="py-2 px-3 text-right text-blue-800">97.30%</td>
+                                <td class="py-2 px-3 text-right text-emerald-700">+0.10%</td>
+                                <td class="py-2 px-3 text-right text-slate-500">+0.00%</td>
+                            </tr>
+                            <tr>
+                                <td class="py-2 px-3 font-sans">B1: Linear Probe (Heads Only)</td>
+                                <td class="py-2 px-2 text-center">384&times;384</td>
+                                <td class="py-2 px-2 text-right">7.7k (0.04%)</td>
+                                <td class="py-2 px-3 text-right">97.12%</td>
+                                <td class="py-2 px-3 text-right text-red-600">-0.08%</td>
+                                <td class="py-2 px-3 text-right text-red-600">-0.18%</td>
+                            </tr>
+                            <tr>
+                                <td class="py-2 px-3 font-sans">B2: Linear Probe + pos_embed</td>
+                                <td class="py-2 px-2 text-center">384&times;384</td>
+                                <td class="py-2 px-2 text-right">229.7k (1.05%)</td>
+                                <td class="py-2 px-3 text-right">97.07%</td>
+                                <td class="py-2 px-3 text-right text-red-600">-0.13%</td>
+                                <td class="py-2 px-3 text-right text-red-600">-0.23%</td>
+                            </tr>
+                            <tr>
+                                <td class="py-2 px-3 font-sans">D: Layer Freezing (8–11) + Hard Distil</td>
+                                <td class="py-2 px-2 text-center">384&times;384</td>
+                                <td class="py-2 px-2 text-right">7.33M (33.6%)</td>
+                                <td class="py-2 px-3 text-right">97.15%</td>
+                                <td class="py-2 px-3 text-right text-red-600">-0.05%</td>
+                                <td class="py-2 px-3 text-right text-red-600">-0.15%</td>
+                            </tr>
+                            <tr class="bg-emerald-50/50">
+                                <td class="py-2 px-3 font-sans font-medium">E: Progressive Curriculum (4 Stages)</td>
+                                <td class="py-2 px-2 text-center">224&rarr;384</td>
+                                <td class="py-2 px-2 text-right">21.8M (100%)</td>
+                                <td class="py-2 px-3 text-right font-semibold text-emerald-800">97.38%</td>
+                                <td class="py-2 px-3 text-right text-emerald-700">+0.18%</td>
+                                <td class="py-2 px-3 text-right text-emerald-700">+0.08%</td>
+                            </tr>
+                            <tr class="bg-emerald-100/90 font-bold border-t-2 border-emerald-500">
+                                <td class="py-2.5 px-3 font-sans text-emerald-950">C: Full Fine-Tuning (Differential LR)</td>
+                                <td class="py-2.5 px-2 text-center text-emerald-950">384&times;384</td>
+                                <td class="py-2.5 px-2 text-right text-emerald-950">21.8M (100%)</td>
+                                <td class="py-2.5 px-3 text-right text-emerald-900 text-base">97.58%</td>
+                                <td class="py-2.5 px-3 text-right text-emerald-800">+0.38%</td>
+                                <td class="py-2.5 px-3 text-right text-emerald-800">+0.28%</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Definitive Answer Box -->
+                <div class="bg-slate-900 text-white rounded-xl p-4 sm:p-5 border-l-8 border-emerald-500 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div>
+                        <div class="text-xs font-bold uppercase tracking-wider text-emerald-400 mb-1">Final Verdict: "Does seeing more pixels help?"</div>
+                        <div class="text-base sm:text-lg font-bold text-white">
+                            YES — but ONLY under full end-to-end backbone adaptation.
+                        </div>
+                        <p class="text-xs sm:text-sm text-slate-300 mt-1">
+                            Without full adaptation, more pixels hurt (<span class="mono text-red-400">96.69%</span> 0-shot, <span class="mono text-red-400">~97.1%</span> partial). With full adaptation, the total gain is <span class="mono text-emerald-400">+0.38%</span> (<span class="mono text-blue-300">+0.10%</span> domain adaptation + <span class="mono text-emerald-400">+0.28%</span> genuine optical resolution gain).
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Speaker Notes -->
+            <div class="speaker-notes bg-amber-50/90 border-t border-amber-200 px-6 py-3.5 text-xs sm:text-sm text-amber-950">
+                <span class="font-bold uppercase tracking-wider text-amber-800 mr-2">[Speaker Notes — Person 3]:</span>
+                This master table brings all eight configurations together against both the 97.20% zero-shot baseline and the 97.30% 224 control. Our answer to "Does seeing more pixels help?" is a conditional yes: without full end-to-end training, higher resolution consistently hurts accuracy, whereas full adaptation with differential learning rates achieves 97.58%—decomposing cleanly into +0.10% from dog-class specialization and +0.28% from genuine high-resolution pixel features.
+            </div>
+        </section>
+
+        <!-- ==========================================
+             SLIDE 11: SUMMARY, INSIGHTS & Q&A
+             ========================================== -->
+        <section class="slide-card w-full max-w-6xl bg-white rounded-xl shadow-2xl border border-slate-200 flex-col justify-between overflow-hidden" data-presenter="Shared Conclusion (~0:45)">
+            <div class="bg-slate-900 text-white px-6 py-3.5 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <span class="bg-emerald-600 text-xs font-bold px-2 py-0.5 rounded">PART 3 &bull; [Person 3 Name]</span>
+                    <h2 class="text-lg sm:text-xl font-bold">Key Architectural Insights &amp; Defense Q&amp;A</h2>
+                </div>
+                <span class="text-xs text-slate-400 mono">Slide 11 / 11</span>
+            </div>
+
+            <div class="p-6 sm:p-8 flex-1 flex flex-col justify-between gap-6">
+                <!-- 4 Takeaway Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                        <div class="text-xs font-bold uppercase text-blue-700 mb-1">1. Positional Interpolation Is Necessary but Insufficient</div>
+                        <p class="text-xs sm:text-sm text-slate-700 leading-relaxed">
+                            Isolating <code class="bg-slate-200 px-1 rounded">CLS</code>/<code class="bg-slate-200 px-1 rounded">DIST</code> tokens and applying 2D bicubic interpolation fixes tensor geometry, but induces an immediate <strong>-0.51%</strong> accuracy drop until self-attention projections adapt.
+                        </p>
+                    </div>
+
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                        <div class="text-xs font-bold uppercase text-blue-700 mb-1">2. The Scientific Control Mandate</div>
+                        <p class="text-xs sm:text-sm text-slate-700 leading-relaxed">
+                            Comparing 384 fine-tuning only against 224 zero-shot conflates domain shift with resolution scaling. Our 224 control run proved that <strong>+0.10%</strong> is class specialization and <strong>+0.28%</strong> is true optical gain.
+                        </p>
+                    </div>
+
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                        <div class="text-xs font-bold uppercase text-indigo-700 mb-1">3. All-or-Nothing ViT Resolution Scaling</div>
+                        <p class="text-xs sm:text-sm text-slate-700 leading-relaxed">
+                            Unlike CNNs with local translation-equivariant kernels, ViT attention matrices scale quadratically (<span class="mono">198&sup2; &rarr; 578&sup2;</span>) in every block. Freezing early blocks bottlenecks global token routing.
+                        </p>
+                    </div>
+
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                        <div class="text-xs font-bold uppercase text-emerald-700 mb-1">4. Budget Allocation Under Tight Compute Caps</div>
+                        <p class="text-xs sm:text-sm text-slate-700 leading-relaxed">
+                            Under a strict 100k-image (11-epoch) cap, dedicating all 11 epochs directly to 384&times;384 with differential LRs (<strong>97.58%</strong>) outperforms splitting epochs across a progressive curriculum (<strong>97.38%</strong>).
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Q&A Banner -->
+                <div class="bg-slate-900 text-white rounded-xl p-6 text-center border border-slate-800">
+                    <h3 class="text-xl sm:text-2xl font-bold mb-2">Thank You &mdash; Ready for Questions &amp; Code Walkthrough</h3>
+                    <p class="text-xs sm:text-sm text-slate-400 mb-4">
+                        Pattern Recognition Lab 2 Defense &bull; Jagiellonian University
+                    </p>
+                    <div class="flex flex-wrap justify-center gap-3 text-xs">
+                        <span class="bg-slate-800 border border-slate-700 px-3 py-1.5 rounded text-blue-300"><strong>[Person 1 Name]:</strong> PE Surgery &amp; 224 Control</span>
+                        <span class="bg-slate-800 border border-slate-700 px-3 py-1.5 rounded text-indigo-300"><strong>[Person 2 Name]:</strong> Probing B1/B2 &amp; Layer Freezing D</span>
+                        <span class="bg-slate-800 border border-slate-700 px-3 py-1.5 rounded text-emerald-300"><strong>[Person 3 Name]:</strong> Full FT C &amp; Curriculum E</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Speaker Notes -->
+            <div class="speaker-notes bg-amber-50/90 border-t border-amber-200 px-6 py-3.5 text-xs sm:text-sm text-amber-950">
+                <span class="font-bold uppercase tracking-wider text-amber-800 mr-2">[Speaker Notes — Person 3]:</span>
+                To conclude: first, 2D bicubic positional interpolation solves the mechanics of scaling to 384x384, but requires weight training to overcome its initial -0.51% drop; second, our 224 control was essential to separate +0.10% domain adaptation from +0.28% optical gain; third, quadratic self-attention shifts require full end-to-end adaptation rather than partial freezing; and fourth, dedicating the full 11-epoch budget directly to 384x384 proved optimal. Thank you, and we are happy to take your questions or walk through our code.
+            </div>
+        </section>
+
+    </main>
+
+    <!-- BOTTOM NAVIGATION BAR -->
+    <footer id="bottom-bar" class="bg-slate-900 border-t border-slate-800 text-slate-300 px-4 py-2.5 flex items-center justify-between z-30">
+        <div class="flex items-center gap-2">
+            <button onclick="prevSlide()" id="prev-btn" class="bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-white text-xs font-semibold px-3 py-1.5 rounded border border-slate-700 transition">
+                &larr; Prev
+            </button>
+            <button onclick="nextSlide()" id="next-btn" class="bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white text-xs font-semibold px-3 py-1.5 rounded transition">
+                Next &rarr;
+            </button>
+            <span class="text-xs text-slate-400 ml-2 hidden sm:inline">Use <kbd class="bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700 text-[11px]">←</kbd> <kbd class="bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700 text-[11px]">→</kbd> or <kbd class="bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700 text-[11px]">Space</kbd></span>
+        </div>
+
+        <!-- Slide Progress Dots -->
+        <div id="slide-dots" class="flex items-center gap-1.5"></div>
+
+        <div id="slide-counter" class="mono text-xs font-semibold text-slate-400">
+            Slide 1 of 11
+        </div>
+    </footer>
+
+    <!-- PRESENTATION LOGIC -->
+    <script>
+        const slides = Array.from(document.querySelectorAll('.slide-card'));
+        const totalSlides = slides.length;
+        let currentIndex = 0;
+        let notesVisible = true;
+        let printMode = false;
+
+        const counterEl = document.getElementById('slide-counter');
+        const presenterBadge = document.getElementById('presenter-badge');
+        const dotsContainer = document.getElementById('slide-dots');
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+
+        // Build progress dots
+        function initDots() {
+            dotsContainer.innerHTML = '';
+            slides.forEach((_, idx) => {
+                const dot = document.createElement('button');
+                dot.onClick = () => goToSlide(idx);
+                dot.addEventListener('click', () => goToSlide(idx));
+                dot.className = `h-2 rounded-full transition-all ${idx === currentIndex ? 'w-6 bg-blue-500' : 'w-2 bg-slate-700 hover:bg-slate-500'}`;
+                dot.title = `Go to Slide ${idx + 1}`;
+                dotsContainer.appendChild(dot);
+            });
+        }
+
+        function updateView() {
+            slides.forEach((slide, idx) => {
+                if (idx === currentIndex) {
+                    slide.classList.add('active');
+                } else {
+                    slide.classList.remove('active');
+                }
+            });
+
+            counterEl.textContent = `Slide ${currentIndex + 1} of ${totalSlides}`;
+            presenterBadge.textContent = slides[currentIndex].getAttribute('data-presenter') || '';
+            prevBtn.disabled = currentIndex === 0;
+            nextBtn.disabled = currentIndex === totalSlides - 1;
+            initDots();
+        }
+
+        function nextSlide() {
+            if (currentIndex < totalSlides - 1) {
+                currentIndex++;
+                updateView();
+            }
+        }
+
+        function prevSlide() {
+            if (currentIndex > 0) {
+                currentIndex--;
+                updateView();
+            }
+        }
+
+        function goToSlide(idx) {
+            currentIndex = idx;
+            updateView();
+        }
+
+        // Toggle Speaker Notes visibility
+        function toggleAllNotes() {
+            notesVisible = !notesVisible;
+            const noteBlocks = document.querySelectorAll('.speaker-notes');
+            noteBlocks.forEach(block => {
+                block.style.display = notesVisible ? 'block' : 'none';
+            });
+            const btn = document.getElementById('notes-toggle-btn');
+            btn.innerHTML = `<span>🗒️ Notes: ${notesVisible ? 'ON' : 'OFF'}</span>`;
+        }
+
+        // Toggle Print / All-Slides Scroll Mode
+        function togglePrintMode() {
+            printMode = !printMode;
+            document.body.classList.toggle('print-mode', printMode);
+        }
+
+        // Keyboard Navigation
+        document.addEventListener('keydown', (e) => {
+            if (printMode && e.key === 'Escape') {
+                togglePrintMode();
+                return;
+            }
+            if (printMode) return;
+
+            if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+                e.preventDefault();
+                nextSlide();
+            } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+                e.preventDefault();
+                prevSlide();
+            } else if (e.key === 'n' || e.key === 'N') {
+                toggleAllNotes();
+            }
+        });
+
+        // 10-Minute Defense Timer
+        let timerSeconds = 0;
+        let timerInterval = null;
+        const timerDisplay = document.getElementById('timer-display');
+        const timerBtn = document.getElementById('timer-btn');
+
+        function formatTime(sec) {
+            const m = String(Math.floor(sec / 60)).padStart(2, '0');
+            const s = String(sec % 60).padStart(2, '0');
+            return `${m}:${s}`;
+        }
+
+        function toggleTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+                timerBtn.textContent = 'Resume';
+            } else {
+                timerBtn.textContent = 'Pause';
+                timerInterval = setInterval(() => {
+                    timerSeconds++;
+                    timerDisplay.textContent = formatTime(timerSeconds);
+                    if (timerSeconds >= 600) {
+                        timerDisplay.className = 'mono text-sm font-bold text-red-400';
+                    } else if (timerSeconds >= 510) {
+                        timerDisplay.className = 'mono text-sm font-bold text-amber-400';
+                    }
+                }, 1000);
+            }
+        }
+
+        function resetTimer() {
+            clearInterval(timerInterval);
+            timerInterval = null;
+            timerSeconds = 0;
+            timerDisplay.textContent = '00:00';
+            timerDisplay.className = 'mono text-sm font-bold text-emerald-400';
+            timerBtn.textContent = 'Start';
+        }
+
+        window.onload = () => {
+            updateView();
+        };
+    </script>
+</body>
+</html>
