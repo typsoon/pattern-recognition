@@ -1,17 +1,3 @@
-# ---
-# jupyter:
-#   jupytext:
-#     text_representation:
-#       extension: .py
-#       format_name: percent
-#       format_version: '1.3'
-#       jupytext_version: 1.19.6
-#   kernelspec:
-#     display_name: Python 3
-#     name: python3
-# ---
-
-# %% [markdown]
 # # Solution A — 0-shot @384
 #
 # **Author: Piotr**
@@ -19,15 +5,12 @@
 # Resize the position embeddings 14×14 → 24×24 and evaluate without any training.
 # `Deit_starter.py` calls `run_zero_shot`; running this file directly does the same for all modes.
 
-# %%
 import copy
-
 from common import evaluate, resize_pos_embed_, save_result
 
 MODES = ['nearest', 'bilinear', 'bicubic']
 
 
-# %%
 def run_zero_shot(base_model, resolution=384, mode='bicubic'):
     """Evaluate a copy of `base_model` with pos_embed resized for `resolution`, no training."""
     print(f"Chosen interpolation mode: {mode}")
@@ -43,7 +26,6 @@ def run_zero_shot(base_model, resolution=384, mode='bicubic'):
     return model_0shot, acc
 
 
-# %%
 if __name__ == "__main__":
     from common import load_pretrained
     model = load_pretrained()

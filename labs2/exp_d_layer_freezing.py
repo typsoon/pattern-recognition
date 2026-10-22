@@ -1,17 +1,3 @@
-# ---
-# jupyter:
-#   jupytext:
-#     text_representation:
-#       extension: .py
-#       format_name: percent
-#       format_version: '1.3'
-#       jupytext_version: 1.19.6
-#   kernelspec:
-#     display_name: Python 3
-#     name: python3
-# ---
-
-# %% [markdown]
 # # Solution D — Layer freezing @384
 #
 # **Author: Gabriela**
@@ -19,7 +5,6 @@
 # Starts from a copy of the given 1000-class model and is scored with the fixed `evaluate()`.
 # `Deit_starter.py` calls `run_d`; running this file directly does the same.
 
-# %%
 import copy
 
 import torch
@@ -28,7 +13,6 @@ from common import MAX_EPOCHS, evaluate, resize_pos_embed_, save_result
 from training import count_params, imagenet_ce_loss, make_loader, train, train_only
 
 
-# %%
 # ════════════════════════════════════════════════════════════
 #  SOLUTION D  —  Layer Freezing @ 384
 #
@@ -78,7 +62,6 @@ def run_d(base_model, resolution=384, freeze_blocks=8):
     return model_d, acc_d
 
 
-# %%
 if __name__ == "__main__":
     from common import load_pretrained
     model = load_pretrained()

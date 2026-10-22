@@ -1,17 +1,3 @@
-# ---
-# jupyter:
-#   jupytext:
-#     text_representation:
-#       extension: .py
-#       format_name: percent
-#       format_version: '1.3'
-#       jupytext_version: 1.19.6
-#   kernelspec:
-#     display_name: Python 3
-#     name: python3
-# ---
-
-# %% [markdown]
 # # Solution E — Progressive resolution curriculum
 #
 # **Author: Vitaliy**
@@ -23,7 +9,6 @@
 #
 # Original run (Colab T4), fixed `evaluate()` @384: **97.38%** (baseline @224: 97.20%).
 
-# %%
 import copy
 
 import torch.optim as optim
@@ -40,7 +25,6 @@ SCHEDULE = [
 ]  # Total 11 epochs = ~99,275 images
 
 
-# %%
 def run_e(base_model, schedule=SCHEDULE):
     """Train a copy of `base_model` through `schedule` = [(resolution, epochs, lr), ...]."""
     assert sum(epochs for _, epochs, _ in schedule) <= MAX_EPOCHS
@@ -75,7 +59,6 @@ def run_e(base_model, schedule=SCHEDULE):
     return model_prog, acc_e
 
 
-# %%
 if __name__ == "__main__":
     from common import load_pretrained
     run_e(load_pretrained())
