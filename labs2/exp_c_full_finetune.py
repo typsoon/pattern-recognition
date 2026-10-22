@@ -1,18 +1,4 @@
-# ---
-# jupyter:
-#   jupytext:
-#     text_representation:
-#       extension: .py
-#       format_name: percent
-#       format_version: '1.3'
-#       jupytext_version: 1.19.6
-#   kernelspec:
-#     display_name: Python 3
-#     name: python3
-# ---
-
-# %% [markdown]
-# # Solution C — Full fine-tuning @384
+# Solution C — Full fine-tuning @384
 #
 # **Author: Vitaliy**
 #
@@ -23,7 +9,6 @@
 #
 # Original run (Colab T4), fixed `evaluate()` @384: **97.58%** (baseline @224: 97.20%).
 
-# %%
 import copy
 
 import torch.optim as optim
@@ -32,7 +17,6 @@ from common import MAX_EPOCHS, evaluate, resize_pos_embed_, save_result
 from training import imagenet_ce_loss, load_checkpoint, make_loader, save_checkpoint, train
 
 
-# %%
 def run_c(base_model, resolution=384):
     # Instantiate a clean copy of the baseline model, everything trainable
     model_384_full = resize_pos_embed_(copy.deepcopy(base_model), resolution).requires_grad_(True)
@@ -57,7 +41,6 @@ def run_c(base_model, resolution=384):
     return model_384_full, acc_c
 
 
-# %%
 if __name__ == "__main__":
     from common import load_pretrained
     run_c(load_pretrained())

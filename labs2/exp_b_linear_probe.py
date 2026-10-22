@@ -1,17 +1,3 @@
-# ---
-# jupyter:
-#   jupytext:
-#     text_representation:
-#       extension: .py
-#       format_name: percent
-#       format_version: '1.3'
-#       jupytext_version: 1.19.6
-#   kernelspec:
-#     display_name: Python 3
-#     name: python3
-# ---
-
-# %% [markdown]
 # # Solution B — Linear probe @384
 #
 # **Author: Gabriela**
@@ -22,7 +8,6 @@
 # Both start from a copy of the given 1000-class model and are scored with the fixed `evaluate()`.
 # `Deit_starter.py` calls `run_b1` / `run_b2`; running this file directly does the same.
 
-# %%
 import copy
 
 import torch
@@ -31,7 +16,6 @@ from common import MAX_EPOCHS, evaluate, resize_pos_embed_, save_result
 from training import count_params, imagenet_ce_loss, make_loader, train, train_only
 
 
-# %%
 # ════════════════════════════════════════════════════════════
 #  SOLUTION B1  —  Linear Probe @ 384
 #  Trainable: head + head_dist
@@ -57,7 +41,6 @@ def run_b1(base_model, resolution=384):
     return model_b1, acc_b1
 
 
-# %%
 # ════════════════════════════════════════════════════════════
 #  SOLUTION B2  —  Linear Probe + pos_embed @ 384
 #  Trainable: head + head_dist + pos_embed
@@ -92,7 +75,6 @@ def run_b2(base_model, resolution=384):
     return model_b2, acc_b2
 
 
-# %%
 if __name__ == "__main__":
     from common import load_pretrained
     model = load_pretrained()

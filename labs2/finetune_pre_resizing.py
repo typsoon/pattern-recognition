@@ -1,17 +1,3 @@
-# ---
-# jupyter:
-#   jupytext:
-#     text_representation:
-#       extension: .py
-#       format_name: percent
-#       format_version: '1.3'
-#       jupytext_version: 1.19.6
-#   kernelspec:
-#     display_name: Python 3
-#     name: python3
-# ---
-
-# %% [markdown]
 # # Fine-tuning control @224 (before any resizing)
 #
 # **Author: Piotr**
@@ -20,7 +6,6 @@
 # so "fine-tuned @384 vs fine-tuned @224" isolates the effect of the extra pixels.
 # `Deit_starter.py` calls `run_control`; running this file directly does the same.
 
-# %%
 import copy
 
 import torch
@@ -32,7 +17,6 @@ from training import imagenet_ce_loss, make_loader, train
 EPOCHS = 11
 
 
-# %%
 def run_control(base_model, resolution=224):
     """Fine-tune a copy of `base_model` at `resolution`; `base_model` itself is left untouched."""
     copied_model = copy.deepcopy(base_model)
@@ -49,7 +33,6 @@ def run_control(base_model, resolution=224):
     return copied_model, acc
 
 
-# %%
 if __name__ == "__main__":
     from common import load_pretrained
     run_control(load_pretrained())
