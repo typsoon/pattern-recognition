@@ -125,17 +125,17 @@
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-slate-200 pt-8">
                     <div class="bg-slate-50 p-4 rounded-lg border-l-4 border-blue-600">
                         <div class="text-xs font-bold uppercase text-blue-700 tracking-wider mb-1">Part 1 &bull; Slides 2–4 (~3.5m)</div>
-                        <div class="font-bold text-slate-900 text-base mb-1">[Person 1 Name]</div>
+                        <div class="font-bold text-slate-900 text-base mb-1">Piotr Sitek</div>
                         <div class="text-xs text-slate-600 leading-relaxed">PE Interpolation Surgery, 0-Shot Modes &amp; The 224&times;224 Control Baseline</div>
                     </div>
                     <div class="bg-slate-50 p-4 rounded-lg border-l-4 border-indigo-600">
                         <div class="text-xs font-bold uppercase text-indigo-700 tracking-wider mb-1">Part 2 &bull; Slides 5–7 (~3.5m)</div>
-                        <div class="font-bold text-slate-900 text-base mb-1">[Person 2 Name]</div>
+                        <div class="font-bold text-slate-900 text-base mb-1">Gabriela Pietras</div>
                         <div class="text-xs text-slate-600 leading-relaxed">Parameter-Efficient Probing, Coordinate Drift &amp; Selective Layer Freezing</div>
                     </div>
                     <div class="bg-slate-50 p-4 rounded-lg border-l-4 border-emerald-600">
                         <div class="text-xs font-bold uppercase text-emerald-700 tracking-wider mb-1">Part 3 &bull; Slides 8–11 (~3.0m)</div>
-                        <div class="font-bold text-slate-900 text-base mb-1">[Person 3 Name]</div>
+                        <div class="font-bold text-slate-900 text-base mb-1">Vitaliy Khomyn</div>
                         <div class="text-xs text-slate-600 leading-relaxed">Full End-to-End Adaptation, Progressive Curriculum &amp; Final Verdict</div>
                     </div>
                 </div>
@@ -143,18 +143,18 @@
 
             <!-- Speaker Notes -->
             <div class="speaker-notes bg-amber-50/90 border-t border-amber-200 px-6 py-3.5 text-xs sm:text-sm text-amber-950">
-                <span class="font-bold uppercase tracking-wider text-amber-800 mr-2">[Speaker Notes — Person 1]:</span>
-                Welcome to our Task 2 defense on scaling Data-Efficient Image Transformers from 224x224 to 384x384 on the Imagewoof dataset. We structured our investigation into three controlled tracks: first, I will cover the positional embedding tensor mechanics, zero-shot degradation, and our 224 control baseline; second, [Person 2 Name] will examine parameter-efficient tuning and partial block freezing; finally, [Person 3 Name] will present full end-to-end fine-tuning, progressive resolution curricula, and our final answer to the task prompt.
+                <span class="font-bold uppercase tracking-wider text-amber-800 mr-2">[Speaker Notes — Piotr]:</span>
+                Welcome to our Task 2 defense on scaling Data-Efficient Image Transformers from 224x224 to 384x384 on the Imagewoof dataset. We structured our investigation into three controlled tracks: first, I will cover the positional embedding tensor mechanics, zero-shot degradation, and our 224 control baseline; second, Gabriela Pietras will examine parameter-efficient tuning and partial block freezing; finally, Vitaliy Khomyn will present full end-to-end fine-tuning, progressive resolution curricula, and our final answer to the task prompt.
             </div>
         </section>
 
         <!-- ==========================================
              SLIDE 2: PROBLEM FRAMING & THE PAPER'S CLAIM
              ========================================== -->
-        <section class="slide-card w-full max-w-6xl bg-white rounded-xl shadow-2xl border border-slate-200 flex-col justify-between overflow-hidden" data-presenter="Part 1: [Person 1 Name] (~1:00)">
+        <section class="slide-card w-full max-w-6xl bg-white rounded-xl shadow-2xl border border-slate-200 flex-col justify-between overflow-hidden" data-presenter="Part 1: Piotr Sitek (~1:00)">
             <div class="bg-slate-900 text-white px-6 py-3.5 flex items-center justify-between">
                 <div class="flex items-center gap-3">
-                    <span class="bg-blue-600 text-xs font-bold px-2 py-0.5 rounded">PART 1 &bull; [Person 1 Name]</span>
+                    <span class="bg-blue-600 text-xs font-bold px-2 py-0.5 rounded">PART 1 &bull; Piotr Sitek</span>
                     <h2 class="text-lg sm:text-xl font-bold">Problem Framing &amp; The Paper's Claim</h2>
                 </div>
                 <span class="text-xs text-slate-400 mono">Slide 2 / 11</span>
@@ -231,7 +231,7 @@
 
             <!-- Speaker Notes -->
             <div class="speaker-notes bg-amber-50/90 border-t border-amber-200 px-6 py-3.5 text-xs sm:text-sm text-amber-950">
-                <span class="font-bold uppercase tracking-wider text-amber-800 mr-2">[Speaker Notes — Person 1]:</span>
+                <span class="font-bold uppercase tracking-wider text-amber-800 mr-2">[Speaker Notes — Piotr]:</span>
                 Touvron et al. showed in Table 10 that fine-tuning DeiT-S at 384x384 yields a +1.4% boost on ImageNet-1k. We test if this holds on Imagewoof under a strict 100,000-image cap, which allows 11 epochs over the 9,025 training photos. Crucially, we rejected the standard Imagewoof-320 package because upsampling 320-pixel images to 384 only feeds interpolation blur into the network; using full-size raw photos ensures we test genuine high-frequency optical information against our 97.20% zero-shot baseline.
             </div>
         </section>
@@ -239,10 +239,10 @@
         <!-- ==========================================
              SLIDE 3: POSITIONAL EMBEDDING SURGERY
              ========================================== -->
-        <section class="slide-card w-full max-w-6xl bg-white rounded-xl shadow-2xl border border-slate-200 flex-col justify-between overflow-hidden" data-presenter="Part 1: [Person 1 Name] (~1:15)">
+        <section class="slide-card w-full max-w-6xl bg-white rounded-xl shadow-2xl border border-slate-200 flex-col justify-between overflow-hidden" data-presenter="Part 1: Piotr Sitek (~1:15)">
             <div class="bg-slate-900 text-white px-6 py-3.5 flex items-center justify-between">
                 <div class="flex items-center gap-3">
-                    <span class="bg-blue-600 text-xs font-bold px-2 py-0.5 rounded">PART 1 &bull; [Person 1 Name]</span>
+                    <span class="bg-blue-600 text-xs font-bold px-2 py-0.5 rounded">PART 1 &bull; Piotr Sitek</span>
                     <h2 class="text-lg sm:text-xl font-bold">What Breaks at 384&times;384: Positional Embedding Surgery</h2>
                 </div>
                 <span class="text-xs text-slate-400 mono">Slide 3 / 11</span>
@@ -310,7 +310,7 @@ model.pos_embed = nn.Parameter(torch.cat([cls_dist_pe, patch_pe], dim=1))   # [1
 
             <!-- Speaker Notes -->
             <div class="speaker-notes bg-amber-50/90 border-t border-amber-200 px-6 py-3.5 text-xs sm:text-sm text-amber-950">
-                <span class="font-bold uppercase tracking-wider text-amber-800 mr-2">[Speaker Notes — Person 1]:</span>
+                <span class="font-bold uppercase tracking-wider text-amber-800 mr-2">[Speaker Notes — Piotr]:</span>
                 With a 16x16 patch size, moving from 224 to 384 increases the patch sequence from 196 to 576 tokens, causing an immediate shape mismatch against the pre-trained 198-token positional embedding. Following the assignment rules, we manually sliced off the non-spatial CLS and distillation tokens so they wouldn't corrupt spatial borders, reshaped the 196 patch embeddings into a 14x14 2D feature map, applied 2D interpolation to 24x24, flattened back to 576 tokens, and re-concatenated the special tokens to form a [1, 578, 384] parameter.
             </div>
         </section>
@@ -318,10 +318,10 @@ model.pos_embed = nn.Parameter(torch.cat([cls_dist_pe, patch_pe], dim=1))   # [1
         <!-- ==========================================
              SLIDE 4: 0-SHOT JUMP & THE 224 CONTROL
              ========================================== -->
-        <section class="slide-card w-full max-w-6xl bg-white rounded-xl shadow-2xl border border-slate-200 flex-col justify-between overflow-hidden" data-presenter="Part 1: [Person 1 Name] (~1:15)">
+        <section class="slide-card w-full max-w-6xl bg-white rounded-xl shadow-2xl border border-slate-200 flex-col justify-between overflow-hidden" data-presenter="Part 1: Piotr Sitek (~1:15)">
             <div class="bg-slate-900 text-white px-6 py-3.5 flex items-center justify-between">
                 <div class="flex items-center gap-3">
-                    <span class="bg-blue-600 text-xs font-bold px-2 py-0.5 rounded">PART 1 &bull; [Person 1 Name]</span>
+                    <span class="bg-blue-600 text-xs font-bold px-2 py-0.5 rounded">PART 1 &bull; Piotr Sitek</span>
                     <h2 class="text-lg sm:text-xl font-bold">0-Shot Resolution Jump &amp; The Crucial 224 Control</h2>
                 </div>
                 <span class="text-xs text-slate-400 mono">Slide 4 / 11</span>
@@ -413,18 +413,18 @@ model.pos_embed = nn.Parameter(torch.cat([cls_dist_pe, patch_pe], dim=1))   # [1
 
             <!-- Speaker Notes -->
             <div class="speaker-notes bg-amber-50/90 border-t border-amber-200 px-6 py-3.5 text-xs sm:text-sm text-amber-950">
-                <span class="font-bold uppercase tracking-wider text-amber-800 mr-2">[Speaker Notes — Person 1]:</span>
-                Evaluating at 384x384 zero-shot immediately drops accuracy by roughly half a percent across all interpolation modes—down to 96.69% with bicubic—proving that higher resolution hurts if weights remain frozen. More importantly, to address the prompt's hint—"be wary of what you compare with"—we ran a controlled 11-epoch fine-tuning at the original 224x224 resolution. That control run reached 97.30%, showing that +0.10% comes purely from adapting to the 10 Imagewoof dog breeds, making 97.30% the real bar to beat. I now hand over to [Person 2 Name].
+                <span class="font-bold uppercase tracking-wider text-amber-800 mr-2">[Speaker Notes — Piotr]:</span>
+                Evaluating at 384x384 zero-shot immediately drops accuracy by roughly half a percent across all interpolation modes—down to 96.69% with bicubic—proving that higher resolution hurts if weights remain frozen. More importantly, to address the prompt's hint—"be wary of what you compare with"—we ran a controlled 11-epoch fine-tuning at the original 224x224 resolution. That control run reached 97.30%, showing that +0.10% comes purely from adapting to the 10 Imagewoof dog breeds, making 97.30% the real bar to beat. I now hand over to Gabriela Pietras.
             </div>
         </section>
 
         <!-- ==========================================
              SLIDE 5: LINEAR PROBING (B1 & B2)
              ========================================== -->
-        <section class="slide-card w-full max-w-6xl bg-white rounded-xl shadow-2xl border border-slate-200 flex-col justify-between overflow-hidden" data-presenter="Part 2: [Person 2 Name] (~1:15)">
+        <section class="slide-card w-full max-w-6xl bg-white rounded-xl shadow-2xl border border-slate-200 flex-col justify-between overflow-hidden" data-presenter="Part 2: Gabriela Pietras (~1:15)">
             <div class="bg-slate-900 text-white px-6 py-3.5 flex items-center justify-between">
                 <div class="flex items-center gap-3">
-                    <span class="bg-indigo-600 text-xs font-bold px-2 py-0.5 rounded">PART 2 &bull; [Person 2 Name]</span>
+                    <span class="bg-indigo-600 text-xs font-bold px-2 py-0.5 rounded">PART 2 &bull; Gabriela Pietras</span>
                     <h2 class="text-lg sm:text-xl font-bold">Parameter-Efficient Adaptation: Linear Probing (B1 &amp; B2)</h2>
                 </div>
                 <span class="text-xs text-slate-400 mono">Slide 5 / 11</span>
@@ -501,7 +501,7 @@ model.pos_embed = nn.Parameter(torch.cat([cls_dist_pe, patch_pe], dim=1))   # [1
 
             <!-- Speaker Notes -->
             <div class="speaker-notes bg-amber-50/90 border-t border-amber-200 px-6 py-3.5 text-xs sm:text-sm text-amber-950">
-                <span class="font-bold uppercase tracking-wider text-amber-800 mr-2">[Speaker Notes — Person 2]:</span>
+                <span class="font-bold uppercase tracking-wider text-amber-800 mr-2">[Speaker Notes — Gabriela]:</span>
                 In Part 2, we asked whether we can adapt to 384x384 parameter-efficiently without retraining all 22 million weights. In Solution B1, training only the dual classification heads—just 0.04% of the model—recovered accuracy from 96.69% to 97.12%, still falling short of the 97.20% baseline. In Solution B2, we also unfroze the interpolated positional embedding, expecting spatial calibration to help; instead, accuracy slipped to 97.07% because shifting input coordinates against frozen self-attention projections induces coordinate drift.
             </div>
         </section>
@@ -509,10 +509,10 @@ model.pos_embed = nn.Parameter(torch.cat([cls_dist_pe, patch_pe], dim=1))   # [1
         <!-- ==========================================
              SLIDE 6: SOLUTION D — SELECTIVE LAYER FREEZING
              ========================================== -->
-        <section class="slide-card w-full max-w-6xl bg-white rounded-xl shadow-2xl border border-slate-200 flex-col justify-between overflow-hidden" data-presenter="Part 2: [Person 2 Name] (~1:15)">
+        <section class="slide-card w-full max-w-6xl bg-white rounded-xl shadow-2xl border border-slate-200 flex-col justify-between overflow-hidden" data-presenter="Part 2: Gabriela Pietras (~1:15)">
             <div class="bg-slate-900 text-white px-6 py-3.5 flex items-center justify-between">
                 <div class="flex items-center gap-3">
-                    <span class="bg-indigo-600 text-xs font-bold px-2 py-0.5 rounded">PART 2 &bull; [Person 2 Name]</span>
+                    <span class="bg-indigo-600 text-xs font-bold px-2 py-0.5 rounded">PART 2 &bull; Gabriela Pietras</span>
                     <h2 class="text-lg sm:text-xl font-bold">Solution D: Selective Layer Freezing &amp; Hard Distillation</h2>
                 </div>
                 <span class="text-xs text-slate-400 mono">Slide 6 / 11</span>
@@ -594,7 +594,7 @@ model.pos_embed = nn.Parameter(torch.cat([cls_dist_pe, patch_pe], dim=1))   # [1
 
             <!-- Speaker Notes -->
             <div class="speaker-notes bg-amber-50/90 border-t border-amber-200 px-6 py-3.5 text-xs sm:text-sm text-amber-950">
-                <span class="font-bold uppercase tracking-wider text-amber-800 mr-2">[Speaker Notes — Person 2]:</span>
+                <span class="font-bold uppercase tracking-wider text-amber-800 mr-2">[Speaker Notes — Gabriela]:</span>
                 To fix coordinate drift while keeping training lightweight, Solution D unfroze the last four Transformer blocks—about 33.6% of the model—alongside the positional embedding and heads, coupled with hard distillation from a frozen 224x224 teacher. While this raised accuracy to 97.15%, it still failed to beat our 97.20% zero-shot baseline or the 97.30% control. Even early Vision Transformer blocks compute global self-attention, so keeping blocks 0 through 7 frozen bottlenecks the representation before it ever reaches block 8.
             </div>
         </section>
@@ -602,10 +602,10 @@ model.pos_embed = nn.Parameter(torch.cat([cls_dist_pe, patch_pe], dim=1))   # [1
         <!-- ==========================================
              SLIDE 7: PART 2 SYNTHESIS — WHY PARTIAL TUNING FAILS
              ========================================== -->
-        <section class="slide-card w-full max-w-6xl bg-white rounded-xl shadow-2xl border border-slate-200 flex-col justify-between overflow-hidden" data-presenter="Part 2: [Person 2 Name] (~1:00)">
+        <section class="slide-card w-full max-w-6xl bg-white rounded-xl shadow-2xl border border-slate-200 flex-col justify-between overflow-hidden" data-presenter="Part 2: Gabriela Pietras (~1:00)">
             <div class="bg-slate-900 text-white px-6 py-3.5 flex items-center justify-between">
                 <div class="flex items-center gap-3">
-                    <span class="bg-indigo-600 text-xs font-bold px-2 py-0.5 rounded">PART 2 &bull; [Person 2 Name]</span>
+                    <span class="bg-indigo-600 text-xs font-bold px-2 py-0.5 rounded">PART 2 &bull; Gabriela Pietras</span>
                     <h2 class="text-lg sm:text-xl font-bold">Part 2 Synthesis: Why Partial Tuning Underperforms at 384&times;384</h2>
                 </div>
                 <span class="text-xs text-slate-400 mono">Slide 7 / 11</span>
@@ -692,18 +692,18 @@ model.pos_embed = nn.Parameter(torch.cat([cls_dist_pe, patch_pe], dim=1))   # [1
 
             <!-- Speaker Notes -->
             <div class="speaker-notes bg-amber-50/90 border-t border-amber-200 px-6 py-3.5 text-xs sm:text-sm text-amber-950">
-                <span class="font-bold uppercase tracking-wider text-amber-800 mr-2">[Speaker Notes — Person 2]:</span>
-                Summarizing Part 2: if you only partially adapt a Vision Transformer, seeing more pixels does not help—our best partial setup reached 97.15%, still below the 97.20% baseline. Because self-attention scales quadratically with token count, jumping from 198 to 578 tokens expands the attention matrix by 8.5x and alters softmax entropy in every single block from layer 0 upward. I now pass to [Person 3 Name] to show what happens when we unlock the full network.
+                <span class="font-bold uppercase tracking-wider text-amber-800 mr-2">[Speaker Notes — Gabriela]:</span>
+                Summarizing Part 2: if you only partially adapt a Vision Transformer, seeing more pixels does not help—our best partial setup reached 97.15%, still below the 97.20% baseline. Because self-attention scales quadratically with token count, jumping from 198 to 578 tokens expands the attention matrix by 8.5x and alters softmax entropy in every single block from layer 0 upward. I now pass to Vitaliy Khomyn to show what happens when we unlock the full network.
             </div>
         </section>
 
         <!-- ==========================================
              SLIDE 8: SOLUTION C — FULL FINE-TUNING @ 384
              ========================================== -->
-        <section class="slide-card w-full max-w-6xl bg-white rounded-xl shadow-2xl border border-slate-200 flex-col justify-between overflow-hidden" data-presenter="Part 3: [Person 3 Name] (~1:00)">
+        <section class="slide-card w-full max-w-6xl bg-white rounded-xl shadow-2xl border border-slate-200 flex-col justify-between overflow-hidden" data-presenter="Part 3: Vitaliy Khomyn (~1:00)">
             <div class="bg-slate-900 text-white px-6 py-3.5 flex items-center justify-between">
                 <div class="flex items-center gap-3">
-                    <span class="bg-emerald-600 text-xs font-bold px-2 py-0.5 rounded">PART 3 &bull; [Person 3 Name]</span>
+                    <span class="bg-emerald-600 text-xs font-bold px-2 py-0.5 rounded">PART 3 &bull; Vitaliy Khomyn</span>
                     <h2 class="text-lg sm:text-xl font-bold">Solution C: Full End-to-End Fine-Tuning @ 384&times;384</h2>
                 </div>
                 <span class="text-xs text-slate-400 mono">Slide 8 / 11</span>
@@ -798,7 +798,7 @@ model.pos_embed = nn.Parameter(torch.cat([cls_dist_pe, patch_pe], dim=1))   # [1
 
             <!-- Speaker Notes -->
             <div class="speaker-notes bg-amber-50/90 border-t border-amber-200 px-6 py-3.5 text-xs sm:text-sm text-amber-950">
-                <span class="font-bold uppercase tracking-wider text-amber-800 mr-2">[Speaker Notes — Person 3]:</span>
+                <span class="font-bold uppercase tracking-wider text-amber-800 mr-2">[Speaker Notes — Vitaliy]:</span>
                 In Solution C, we unfroze all 21.8 million parameters and applied differential learning rates: 1e-5 on the Transformer blocks to preserve pre-trained features, and a 10x higher rate of 1e-4 on the interpolated positional embeddings and heads. Already by Epoch 1, validation accuracy jumped from 96.69% to 97.38%, peaking at 97.63% and stabilizing at 97.58% at Epoch 11. This beats the zero-shot baseline by +0.38% and, crucially, beats our 224 fine-tuning control by +0.28%, proving that higher resolution genuinely helps once all attention layers can adapt.
             </div>
         </section>
@@ -806,10 +806,10 @@ model.pos_embed = nn.Parameter(torch.cat([cls_dist_pe, patch_pe], dim=1))   # [1
         <!-- ==========================================
              SLIDE 9: SOLUTION E — PROGRESSIVE CURRICULUM
              ========================================== -->
-        <section class="slide-card w-full max-w-6xl bg-white rounded-xl shadow-2xl border border-slate-200 flex-col justify-between overflow-hidden" data-presenter="Part 3: [Person 3 Name] (~1:00)">
+        <section class="slide-card w-full max-w-6xl bg-white rounded-xl shadow-2xl border border-slate-200 flex-col justify-between overflow-hidden" data-presenter="Part 3: Vitaliy Khomyn (~1:00)">
             <div class="bg-slate-900 text-white px-6 py-3.5 flex items-center justify-between">
                 <div class="flex items-center gap-3">
-                    <span class="bg-emerald-600 text-xs font-bold px-2 py-0.5 rounded">PART 3 &bull; [Person 3 Name]</span>
+                    <span class="bg-emerald-600 text-xs font-bold px-2 py-0.5 rounded">PART 3 &bull; Vitaliy Khomyn</span>
                     <h2 class="text-lg sm:text-xl font-bold">Solution E: Progressive Resolution Curriculum (224 &rarr; 384)</h2>
                 </div>
                 <span class="text-xs text-slate-400 mono">Slide 9 / 11</span>
@@ -904,7 +904,7 @@ model.pos_embed = nn.Parameter(torch.cat([cls_dist_pe, patch_pe], dim=1))   # [1
 
             <!-- Speaker Notes -->
             <div class="speaker-notes bg-amber-50/90 border-t border-amber-200 px-6 py-3.5 text-xs sm:text-sm text-amber-950">
-                <span class="font-bold uppercase tracking-wider text-amber-800 mr-2">[Speaker Notes — Person 3]:</span>
+                <span class="font-bold uppercase tracking-wider text-amber-800 mr-2">[Speaker Notes — Vitaliy]:</span>
                 In Solution E, we tested whether easing the resolution shock via a progressive curriculum—224 to 256, 320, and finally 384—would outperform jumping straight to 384. To prevent compounding interpolation blur across stages, we cached the original 14x14 positional embedding and interpolated freshly from that base at each step. While Solution E reached 97.38%—beating both the 97.20% baseline and 97.30% control—it trailed Solution C's 97.58% because our 11-epoch cap left only 2 epochs at the final 384x384 target resolution.
             </div>
         </section>
@@ -912,10 +912,10 @@ model.pos_embed = nn.Parameter(torch.cat([cls_dist_pe, patch_pe], dim=1))   # [1
         <!-- ==========================================
              SLIDE 10: MASTER COMPARISON TABLE & FINAL ANSWER
              ========================================== -->
-        <section class="slide-card w-full max-w-6xl bg-white rounded-xl shadow-2xl border border-slate-200 flex-col justify-between overflow-hidden" data-presenter="Part 3: [Person 3 Name] (~0:45)">
+        <section class="slide-card w-full max-w-6xl bg-white rounded-xl shadow-2xl border border-slate-200 flex-col justify-between overflow-hidden" data-presenter="Part 3: Vitaliy Khomyn (~0:45)">
             <div class="bg-slate-900 text-white px-6 py-3.5 flex items-center justify-between">
                 <div class="flex items-center gap-3">
-                    <span class="bg-emerald-600 text-xs font-bold px-2 py-0.5 rounded">PART 3 &bull; [Person 3 Name]</span>
+                    <span class="bg-emerald-600 text-xs font-bold px-2 py-0.5 rounded">PART 3 &bull; Vitaliy Khomyn</span>
                     <h2 class="text-lg sm:text-xl font-bold">Master Comparison Matrix &amp; The Definitive Answer</h2>
                 </div>
                 <span class="text-xs text-slate-400 mono">Slide 10 / 11</span>
@@ -1020,7 +1020,7 @@ model.pos_embed = nn.Parameter(torch.cat([cls_dist_pe, patch_pe], dim=1))   # [1
 
             <!-- Speaker Notes -->
             <div class="speaker-notes bg-amber-50/90 border-t border-amber-200 px-6 py-3.5 text-xs sm:text-sm text-amber-950">
-                <span class="font-bold uppercase tracking-wider text-amber-800 mr-2">[Speaker Notes — Person 3]:</span>
+                <span class="font-bold uppercase tracking-wider text-amber-800 mr-2">[Speaker Notes — Vitaliy]:</span>
                 This master table brings all eight configurations together against both the 97.20% zero-shot baseline and the 97.30% 224 control. Our answer to "Does seeing more pixels help?" is a conditional yes: without full end-to-end training, higher resolution consistently hurts accuracy, whereas full adaptation with differential learning rates achieves 97.58%—decomposing cleanly into +0.10% from dog-class specialization and +0.28% from genuine high-resolution pixel features.
             </div>
         </section>
@@ -1031,7 +1031,7 @@ model.pos_embed = nn.Parameter(torch.cat([cls_dist_pe, patch_pe], dim=1))   # [1
         <section class="slide-card w-full max-w-6xl bg-white rounded-xl shadow-2xl border border-slate-200 flex-col justify-between overflow-hidden" data-presenter="Shared Conclusion (~0:45)">
             <div class="bg-slate-900 text-white px-6 py-3.5 flex items-center justify-between">
                 <div class="flex items-center gap-3">
-                    <span class="bg-emerald-600 text-xs font-bold px-2 py-0.5 rounded">PART 3 &bull; [Person 3 Name]</span>
+                    <span class="bg-emerald-600 text-xs font-bold px-2 py-0.5 rounded">PART 3 &bull; Vitaliy Khomyn</span>
                     <h2 class="text-lg sm:text-xl font-bold">Key Architectural Insights &amp; Defense Q&amp;A</h2>
                 </div>
                 <span class="text-xs text-slate-400 mono">Slide 11 / 11</span>
@@ -1076,16 +1076,16 @@ model.pos_embed = nn.Parameter(torch.cat([cls_dist_pe, patch_pe], dim=1))   # [1
                         Pattern Recognition Lab 2 Defense &bull; Jagiellonian University
                     </p>
                     <div class="flex flex-wrap justify-center gap-3 text-xs">
-                        <span class="bg-slate-800 border border-slate-700 px-3 py-1.5 rounded text-blue-300"><strong>[Person 1 Name]:</strong> PE Surgery &amp; 224 Control</span>
-                        <span class="bg-slate-800 border border-slate-700 px-3 py-1.5 rounded text-indigo-300"><strong>[Person 2 Name]:</strong> Probing B1/B2 &amp; Layer Freezing D</span>
-                        <span class="bg-slate-800 border border-slate-700 px-3 py-1.5 rounded text-emerald-300"><strong>[Person 3 Name]:</strong> Full FT C &amp; Curriculum E</span>
+                        <span class="bg-slate-800 border border-slate-700 px-3 py-1.5 rounded text-blue-300"><strong>Piotr Sitek:</strong> PE Surgery &amp; 224 Control</span>
+                        <span class="bg-slate-800 border border-slate-700 px-3 py-1.5 rounded text-indigo-300"><strong>Gabriela Pietras:</strong> Probing B1/B2 &amp; Layer Freezing D</span>
+                        <span class="bg-slate-800 border border-slate-700 px-3 py-1.5 rounded text-emerald-300"><strong>Vitaliy Khomyn:</strong> Full FT C &amp; Curriculum E</span>
                     </div>
                 </div>
             </div>
 
             <!-- Speaker Notes -->
             <div class="speaker-notes bg-amber-50/90 border-t border-amber-200 px-6 py-3.5 text-xs sm:text-sm text-amber-950">
-                <span class="font-bold uppercase tracking-wider text-amber-800 mr-2">[Speaker Notes — Person 3]:</span>
+                <span class="font-bold uppercase tracking-wider text-amber-800 mr-2">[Speaker Notes — Vitaliy]:</span>
                 To conclude: first, 2D bicubic positional interpolation solves the mechanics of scaling to 384x384, but requires weight training to overcome its initial -0.51% drop; second, our 224 control was essential to separate +0.10% domain adaptation from +0.28% optical gain; third, quadratic self-attention shifts require full end-to-end adaptation rather than partial freezing; and fourth, dedicating the full 11-epoch budget directly to 384x384 proved optimal. Thank you, and we are happy to take your questions or walk through our code.
             </div>
         </section>
