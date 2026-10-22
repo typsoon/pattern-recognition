@@ -49,22 +49,10 @@
 # **Step 1. Data.** [Imagewoof](https://github.com/fastai/imagenette): 10 dog breeds from ImageNet, 9,025 training and 3,929 validation photos, **at full size** (about 1.3 GB, under a minute to download).
 
 # %% colab={"base_uri": "https://localhost:8080/"} id="MAMzxOUHLD_S" outputId="011ffc72-e427-4d14-b2c5-8ca47b10ae1b"
-import os, tarfile, time, urllib.request
 import torch, timm
-from torchvision import datasets
 
-device = "cuda" if torch.cuda.is_available() else "cpu"
-assert device == "cuda", "Switch to a GPU runtime: Runtime -> Change runtime type -> T4 GPU"
-
-URL = "https://s3.amazonaws.com/fast-ai-imageclas/imagewoof2.tgz"
-# we use the full-size image sets on purpose, not the smaller "-320" versions
-# can you tell why? (in the deck)
-if not os.path.exists("imagewoof2/val"):
-    urllib.request.urlretrieve(URL, "imagewoof2.tgz")
-    with tarfile.open("imagewoof2.tgz") as t:
-        t.extractall(filter="data")
-for split in ["train", "val"]:
-    print(split, sum(len(f) for _, _, f in os.walk(f"imagewoof2/{split}")), "photos")
+# downloads Imagewoof if missing, builds `cfg` and `to_imagenet`, defines the fixed `evaluate()`
+from common import cfg, device, evaluate, to_imagenet
 
 # %% [markdown] id="aVtyFWKaLD_S"
 # **Step 2. Model.** A distilled DeiT-S from the paper (12 blocks, 384 dims, 22M parameters, the DeiT-S⚗ of Table 5), trained on ImageNet at 224×224, together with the exact preprocessing it was trained with.
@@ -77,134 +65,49 @@ for split in ["train", "val"]:
 # </details>
 
 # %% colab={"base_uri": "https://localhost:8080/", "height": 202, "referenced_widgets": ["a968ce76737f4b9d9f4712297fdfb586", "b894fec9e01a42a2b0372e907c70051b", "17af10d0af844070ba16da9a3ae8ca45", "da55e39bbfbd4af2ae810d48f4691bab", "abcd31c93fef40daaaa0aba65e82de77", "7fd2d9c0ee754eec92e81cb5265b100e", "74815565d5684a9fb336d374a19712f5", "66e16aa134794eae963a1563bfe3c7f7", "227697aa102a4cf38439de9ab40ec670", "78687b8bf53d4c3e8653b9a98c44b0ba", "0d6803bda74e47fdaa65a5d52019663d", "8640b4cbc4f9461fa72d02c49280786f", "53af416f56714d1da3c9cdb15db86795", "54c2a94f1c7643e8bc09a26f68ec7611", "bf3e82579e094ab1821412c1e61041f9", "bac40fff5aa546a098b35cca1502023b", "fbe6f48349c340c3b747c4767c84df9b", "6d49d0d4fd1d47ae9acf3113a48922d6", "ea22ed1095a64deb9e162eecbb0c85c7", "10b901d7df8c4748995ebef6593b15e3", "bc36e4ed98b84f4eac0c26a8df856a41", "e9a4212a12f14b49a07806e28e17517f"]} id="afxPMT6ILD_S" outputId="46a13d7d-0554-4aed-b299-d16215f3ce49"
-model = timm.create_model("deit_small_distilled_patch16_224", pretrained=True).to(device).eval()
-cfg = timm.data.resolve_data_config({}, model=model)  # the preprocessing the model was trained with
-
-# %%
-
-# ImageFolder labels the 10 folders 0..9, but the model outputs 1000 ImageNet classes:
-# to_imagenet[label] translates a folder label into the ImageNet class index
-wnids = list(timm.data.ImageNetInfo().label_names())
-breeds = datasets.ImageFolder("imagewoof2/val").classes
-to_imagenet = torch.tensor([wnids.index(w) for w in breeds], device=device)
-print(cfg)
-print("folder -> ImageNet index:", dict(zip(breeds, to_imagenet.tolist())))
-
+model = (
+    timm.create_model("deit_small_distilled_patch16_224", pretrained=True)
+    .to(device)
+    .eval()
+)
 
 # %% [markdown] id="H4GeKsrKLD_S"
 # **Step 3. The fixed evaluation** (DON'T modify it). `evaluate(model, resolution)` resizes the validation photos for the given resolution exactly as the model's own preprocessing does, and returns the **top-1 accuracy over the 10 breeds**: the model's prediction is the highest-scoring of its 10 dog outputs.
 
 # %% id="Xfx_sNmXLD_S"
-@torch.no_grad()
-def evaluate(model, resolution):
-    """The fixed evaluation for task 2. Do not change it; report exactly what it prints.
+# `evaluate` is imported from common.py above (unchanged from the starter), so every experiment uses the same one
+help(evaluate)
 
-    model      - any model that takes (batch, 3, resolution, resolution) images and returns 1000 logits
-    resolution - the input size: 224 for the original model, e.g. 384 for yours
-    returns: accuracy - top-1 over the 10 breeds, on the 3,929 Imagewoof validation photos
-    """
-    model.eval()
-    tf = timm.data.create_transform(**dict(cfg, input_size=(3, resolution, resolution)))
-    loader = torch.utils.data.DataLoader(datasets.ImageFolder("imagewoof2/val", transform=tf),
-                                         batch_size=64, num_workers=2)
-    correct = n = 0
-    for x, y in loader:
-        x, y = x.to(device), y.to(device)
-        with torch.autocast("cuda", dtype=torch.float16):
-            logits = model(x)
-        correct += (logits[:, to_imagenet].argmax(-1) == y).sum().item()  # best of the 10 breeds
-        n += len(y)
-    return correct / n
+# %% [markdown]
+# # 0-shot @384 per interpolation mode
+#
+# **Author: Piotr** (`exp_a_zero_shot.py`, pos-embed resizing in `common.py`)
 
 # %%
-from bicubic import enlarge_pos_embed
-from torch import nn
-
-# Should be torch.Size([1, 198, 384])
+from exp_a_zero_shot import MODES, run_zero_shot
 
 SMALLER_RES = 224
 BIGGER_RES = 384
 
 chosen_resolution = SMALLER_RES
 
-if chosen_resolution > SMALLER_RES and model.pos_embed.shape[1] == 198:
-    chosen_mode = 'bicubic'
-    # chosen_mode = 'bilinear'
-    # chosen_mode = 'nearest'
-    #
-    print(f"Chosen interpolation mode: {chosen_mode}")
-    print(model.pos_embed.shape, "Before resizing")
-
-    assert isinstance(model.pos_embed, torch.Tensor)
-    model.pos_embed = nn.Parameter(enlarge_pos_embed(model.pos_embed, chosen_mode))
-
-    if hasattr(model, "patch_embed"):
-        model.patch_embed.img_size = (chosen_resolution, chosen_resolution)
-        model.patch_embed.grid_size = (24, 24)
-        model.patch_embed.num_patches = 24 * 24
-
-# Should be torch.Size([1, 578, 384])
-    print(model.pos_embed.shape, "After resizing")
-    print(f"DeiT-S 0-shot ({chosen_mode}) @{chosen_resolution}: top-1 {evaluate(model, chosen_resolution):.2%}")
+# %%
+# 0-shot @384 for every interpolation mode; each run resizes its own copy of `model`
+zero_shot = {mode: run_zero_shot(model, BIGGER_RES, mode)[1] for mode in MODES}
 
 # %% [markdown] id="Lc9q5bbMLD_S"
 # **Step 4. Baseline.** Takes about half a minute. You should get **top-1 ≈ 97.20%** at 224. If not, something in the setup went wrong.
 
+# %% [markdown]
+# # Fine-tuning control @224
+#
+# **Author: Piotr** (`finetune_pre_resizing.py`)
+
 # %% colab={"base_uri": "https://localhost:8080/"} id="7vuhP0KHLD_T" outputId="6ad96302-476a-47ba-92a9-1d3414246c80"
-def fine_tune(model, resolution, datapoints_num_limit = 100_000):
-    tf = timm.data.create_transform(**dict(cfg, input_size=(3, resolution, resolution), is_training=True))
-    dataset = datasets.ImageFolder("imagewoof2/train", transform=tf)
-    loader = torch.utils.data.DataLoader(dataset, batch_size=64, num_workers=2, shuffle=True, pin_memory=True)
-
-    optimizer = torch.optim.AdamW(model.parameters(), lr=2e-5, weight_decay=1e-4)
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=11)
-    criterion = nn.CrossEntropyLoss()
-    scaler = torch.amp.GradScaler(device)
-
-    # 4. Fine-tuning loop (11 epochs = 99,275 images, fitting the 100k budget)
-    EPOCHS = 11
-
-    training_images_num = EPOCHS * len(dataset)
-    assert training_images_num <= datapoints_num_limit, f"Budget exceeded, expected max {datapoints_num_limit} per training run, got {training_images_num}"
-
-    print(f"Starting {resolution}x{resolution} Fine-Tuning Control Run...")
-    for epoch in range(1, EPOCHS + 1):
-        model.train()
-        total_loss = 0.0
-        correct = 0
-        total = 0
-
-        for images, targets in loader:
-            images, targets = images.to(device), targets.to(device)
-            optimizer.zero_grad()
-
-            # Mixed precision for speed and memory efficiency
-            with torch.autocast("cuda", dtype=torch.float16):
-                outputs = model(images)
-
-                # Slice the 10 dog logits matching Imagewoof classes
-                dog_logits = outputs[:, to_imagenet]
-                loss = criterion(dog_logits, targets)
-
-            scaler.scale(loss).backward()
-            scaler.step(optimizer)
-            scaler.update()
-
-            total_loss += loss.item() * images.size(0)
-            correct += (dog_logits.argmax(-1) == targets).sum().item()
-            total += targets.size(0)
-
-        scheduler.step()
-
-        train_acc = correct / total
-        avg_loss = total_loss / total
-        print(f"Epoch [{epoch:02d}/{EPOCHS:02d}] - Loss: {avg_loss:.4f} | Train Acc: {train_acc:.2%}")
+from finetune_pre_resizing import run_control
 
 # %%
-fine_tune(model, chosen_resolution)
-
-# %%
-print(f"DeiT-S fine-tuned @{chosen_resolution}: top-1 {evaluate(model, chosen_resolution):.2%}")
+model_control, acc_control = run_control(model, chosen_resolution)
 
 # %% [markdown] id="bjJnsULFLD_T"
 # # Before you start
@@ -223,3 +126,42 @@ print(f"DeiT-S fine-tuned @{chosen_resolution}: top-1 {evaluate(model, chosen_re
 # print(f"ours @384: top-1 {evaluate(your_model, 384):.2%}")
 
 # %% id="VpJA07ZtLlx8"
+
+# %% [markdown]
+# # Linear probe (B1, B2) and layer freezing (D) @384
+#
+# **Author: Gabriela**
+#
+# Definitions are in `exp_b_linear_probe.py` and `exp_d_layer_freezing.py`. Each run trains its own
+# copy of the model it is given, so `model` stays the untouched pretrained DeiT-S.
+
+# %%
+from exp_b_linear_probe import run_b1, run_b2
+from exp_d_layer_freezing import run_d
+
+# %%
+model_b1, acc_b1 = run_b1(model)
+
+# %%
+model_b2, acc_b2 = run_b2(model)
+
+# %%
+model_d, acc_d = run_d(model)
+
+# %% [markdown]
+# # Full fine-tuning (C) and progressive resolution (E) @384
+#
+# **Author: Vitaliy**
+#
+# Definitions are in `exp_c_full_finetune.py` and `exp_e_progressive.py`. Both train their own copy
+# of `model`, and load a saved checkpoint instead of retraining if one exists.
+
+# %%
+from exp_c_full_finetune import run_c
+from exp_e_progressive import run_e
+
+# %%
+model_c, acc_c = run_c(model)
+
+# %%
+model_e, acc_e = run_e(model)
