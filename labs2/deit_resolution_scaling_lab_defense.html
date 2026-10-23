@@ -179,10 +179,10 @@
                     </div>
 
                     <div class="bg-slate-50 border border-slate-200 rounded-lg p-4">
-                        <div class="text-xs font-bold uppercase text-slate-500 mb-2">Literature Benchmark: Touvron et al. (ICML 2021, Table 10)</div>
-                        <p class="text-xs sm:text-sm text-slate-700 mb-3">
-                            Fine-tuning pre-trained models at higher resolution consistently boosted Top-1 accuracy on full ImageNet-1k (1.28M images):
-                        </p>
+                        <div class="text-xs font-bold uppercase text-slate-500 mb-2">Touvron et al. (ICML 2021, Table 10)</div>
+                        <!-- <p class="text-xs sm:text-sm text-slate-700 mb-3"> -->
+                        <!--     Fine-tuning pre-trained models at higher resolution consistently boosted Top-1 accuracy on full ImageNet-1k (1.28M images): -->
+                        <!-- </p> -->
                         <div class="grid grid-cols-2 gap-3 text-center">
                             <div class="bg-white p-2.5 rounded border border-slate-200">
                                 <div class="text-xs text-slate-500 font-medium">DeiT-B (224 &rarr; 384)</div>
@@ -200,28 +200,26 @@
                         <ul class="text-xs sm:text-sm text-slate-700 space-y-1.5 list-disc list-inside">
                             <li><strong>Backbone:</strong> Distilled <code class="bg-slate-200 px-1 rounded">deit_small_distilled_patch16_224</code> (22.4M params).</li>
                             <li><strong>Dataset:</strong> Imagewoof (10 challenging dog breeds from ImageNet; 9,025 train / 3,929 val).</li>
-                            <li><strong>Compute Cap:</strong> &le;100,000 images per run &rarr; max <strong>11 epochs</strong> (11 &times; 9,025 = 99,275 images).</li>
-                            <li><strong>Evaluation:</strong> Fixed <code class="bg-slate-200 px-1 rounded">evaluate()</code> via 10-class ImageNet logit indexing.</li>
                         </ul>
                     </div>
                 </div>
 
                 <!-- Right Column: Why Full-Size Imagewoof & Baseline Card -->
                 <div class="lg:col-span-5 space-y-4">
-                    <div class="bg-amber-50 border border-amber-300 rounded-lg p-4">
-                        <div class="flex items-center justify-between mb-1.5">
-                            <span class="text-xs font-bold uppercase text-amber-900">Data Integrity Decision</span>
-                            <span class="text-[11px] bg-amber-200 text-amber-900 font-semibold px-2 py-0.5 rounded">Crucial Control</span>
-                        </div>
-                        <h3 class="text-sm font-bold text-slate-900 mb-2">Why Full-Size Imagewoof instead of "-320"?</h3>
-                        <p class="text-xs sm:text-sm text-slate-700 leading-relaxed mb-2">
-                            Standard <code class="bg-amber-100 px-1 rounded">imagewoof2-320</code> pre-downscales all images so the shortest edge is 320 px.
-                        </p>
-                        <p class="text-xs sm:text-sm text-slate-700 leading-relaxed">
-                            Upscaling 320 px images to 384&times;384 introduces synthetic <strong>interpolation blur</strong> into the inputs. To test whether <em>genuine optical detail</em> helps, we use full-resolution raw Imagewoof images.
-                        </p>
-                    </div>
-
+                    <!-- <div class="bg-amber-50 border border-amber-300 rounded-lg p-4"> -->
+                    <!--     <div class="flex items-center justify-between mb-1.5"> -->
+                    <!--         <span class="text-xs font-bold uppercase text-amber-900">Data Integrity Decision</span> -->
+                    <!--         <span class="text-[11px] bg-amber-200 text-amber-900 font-semibold px-2 py-0.5 rounded">Crucial Control</span> -->
+                    <!--     </div> -->
+                    <!--     <h3 class="text-sm font-bold text-slate-900 mb-2">Why Full-Size Imagewoof instead of "-320"?</h3> -->
+                    <!--     <p class="text-xs sm:text-sm text-slate-700 leading-relaxed mb-2"> -->
+                    <!--         Standard <code class="bg-amber-100 px-1 rounded">imagewoof2-320</code> pre-downscales all images so the shortest edge is 320 px. -->
+                    <!--     </p> -->
+                    <!--     <p class="text-xs sm:text-sm text-slate-700 leading-relaxed"> -->
+                    <!--         Upscaling 320 px images to 384&times;384 introduces synthetic <strong>interpolation blur</strong> into the inputs. To test whether <em>genuine optical detail</em> helps, we use full-resolution raw Imagewoof images. -->
+                    <!--     </p> -->
+                    <!-- </div> -->
+                    <!---->
                     <div class="bg-slate-900 text-white rounded-lg p-5 border border-slate-800">
                         <div class="text-xs font-semibold uppercase text-slate-400 mb-1">Starting Reference Point</div>
                         <div class="text-sm text-slate-300 mb-3">Unmodified DeiT-S @ 224&times;224 (0-Shot Evaluation)</div>
@@ -231,9 +229,9 @@
                         </div>
                     </div>
 
-                    <div class="bg-slate-100 border border-slate-300 rounded-lg p-3 text-xs text-slate-600 italic">
-                        <strong>Assignment Hint:</strong> "Be wary of what you compare with, and of how your claim relates to the paper's."
-                    </div>
+                    <!-- <div class="bg-slate-100 border border-slate-300 rounded-lg p-3 text-xs text-slate-600 italic"> -->
+                    <!--     <strong>Assignment Hint:</strong> "Be wary of what you compare with, and of how your claim relates to the paper's." -->
+                    <!-- </div> -->
                 </div>
             </div>
 
@@ -262,17 +260,22 @@
                     <div class="bg-slate-50 border border-slate-200 rounded-lg p-4">
                         <div class="text-xs font-bold uppercase text-slate-500 mb-1">1. Patch Grid @ 224&times;224</div>
                         <div class="mono text-sm font-bold text-slate-900 mb-1">P = 16 &rarr; (224 / 16)&sup2; = 196 patches</div>
-                        <p class="text-xs text-slate-600">14&times;14 spatial grid + 2 special tokens (<code class="bg-slate-200 px-1 rounded">CLS</code>, <code class="bg-slate-200 px-1 rounded">DIST</code>) = <strong>198 tokens</strong>.</p>
+                        <p class="text-xs text-slate-600">
+                        <!-- 14&times;14 spatial grid + 2 special tokens (<code class="bg-slate-200 px-1 rounded">CLS</code>, <code class="bg-slate-200 px-1 rounded">DIST</code>) =  -->
+                        <strong>198 tokens</strong>.</p>
                     </div>
                     <div class="bg-slate-50 border border-slate-200 rounded-lg p-4">
                         <div class="text-xs font-bold uppercase text-slate-500 mb-1">2. Patch Grid @ 384&times;384</div>
                         <div class="mono text-sm font-bold text-blue-700 mb-1">P = 16 &rarr; (384 / 16)&sup2; = 576 patches</div>
-                        <p class="text-xs text-slate-600">24&times;24 spatial grid + 2 special tokens (<code class="bg-slate-200 px-1 rounded">CLS</code>, <code class="bg-slate-200 px-1 rounded">DIST</code>) = <strong>578 tokens</strong>.</p>
+                        <p class="text-xs text-slate-600">
+                        <!-- 24&times;24 spatial grid + 2 special tokens (<code class="bg-slate-200 px-1 rounded">CLS</code>, -->
+                        <!-- <code class="bg-slate-200 px-1 rounded">DIST</code>) =  -->
+                        <strong>578 tokens</strong>.</p>
                     </div>
                     <div class="bg-red-50 border border-red-200 rounded-lg p-4">
                         <div class="text-xs font-bold uppercase text-red-700 mb-1">3. The Runtime Failure</div>
                         <div class="mono text-xs font-bold text-red-900 mb-1">pos_embed: [1, 198, 384] vs [B, 578, 384]</div>
-                        <p class="text-xs text-red-800">Element-wise addition <code class="bg-red-100 px-1 rounded">x + pos_embed</code> fails immediately without manual 2D resizing.</p>
+                        <!-- <p class="text-xs text-red-800">Element-wise addition <code class="bg-red-100 px-1 rounded">x + pos_embed</code> fails immediately without manual 2D resizing.</p> -->
                     </div>
                 </div>
 
@@ -281,38 +284,38 @@
                     <div class="text-xs font-bold uppercase tracking-wider text-blue-400 mb-3">Manual 5-Step Tensor Resizing Pipeline (No Pre-Built timm Helpers)</div>
 
                     <div class="grid grid-cols-1 md:grid-cols-5 gap-3 text-xs">
-                        <div class="bg-slate-800/90 border border-slate-700 p-3 rounded-lg">
-                            <div class="font-bold text-blue-300 mb-1">Step 1: Slice Tokens</div>
-                            <div class="mono text-[11px] text-emerald-300 mb-1">[1, 198, 384]</div>
-                            <p class="text-slate-300 leading-snug">Separate <code class="text-amber-300">cls</code> (idx 0) &amp; <code class="text-amber-300">dist</code> (idx 1) from the 196 patch embeddings.</p>
-                        </div>
-                        <div class="bg-slate-800/90 border border-slate-700 p-3 rounded-lg">
-                            <div class="font-bold text-blue-300 mb-1">Step 2: 2D Reshape</div>
-                            <div class="mono text-[11px] text-emerald-300 mb-1">[1, 384, 14, 14]</div>
-                            <p class="text-slate-300 leading-snug">View <code class="text-slate-200">[1,196,384]</code> as <code class="text-slate-200">[1,14,14,384]</code> and permute channels first.</p>
-                        </div>
-                        <div class="bg-slate-800/90 border border-slate-700 p-3 rounded-lg">
-                            <div class="font-bold text-blue-300 mb-1">Step 3: Interpolate</div>
-                            <div class="mono text-[11px] text-emerald-300 mb-1">14&times;14 &rarr; 24&times;24</div>
-                            <p class="text-slate-300 leading-snug">Apply 2D <code class="text-amber-300">F.interpolate</code> (bicubic, <code class="text-slate-200">align_corners=False</code>).</p>
-                        </div>
-                        <div class="bg-slate-800/90 border border-slate-700 p-3 rounded-lg">
-                            <div class="font-bold text-blue-300 mb-1">Step 4: Re-Attach</div>
-                            <div class="mono text-[11px] text-emerald-300 mb-1">[1, 578, 384]</div>
-                            <p class="text-slate-300 leading-snug">Permute &amp; flatten to <code class="text-slate-200">[1,576,384]</code>; concat <code class="text-amber-300">[cls, dist, patches]</code>.</p>
-                        </div>
-                        <div class="bg-slate-800/90 border border-slate-700 p-3 rounded-lg">
-                            <div class="font-bold text-blue-300 mb-1">Step 5: Metadata Sync</div>
-                            <div class="mono text-[11px] text-emerald-300 mb-1">grid_size=(24,24)</div>
-                            <p class="text-slate-300 leading-snug">Update <code class="text-slate-200">patch_embed.img_size = (384,384)</code> to pass internal assertions.</p>
-                        </div>
+                    <!--     <div class="bg-slate-800/90 border border-slate-700 p-3 rounded-lg"> -->
+                    <!--         <div class="font-bold text-blue-300 mb-1">Step 1: Slice Tokens</div> -->
+                    <!--         <div class="mono text-[11px] text-emerald-300 mb-1">[1, 198, 384]</div> -->
+                    <!--         <p class="text-slate-300 leading-snug">Separate <code class="text-amber-300">cls</code> (idx 0) &amp; <code class="text-amber-300">dist</code> (idx 1) from the 196 patch embeddings.</p> -->
+                    <!--     </div> -->
+                    <!--     <div class="bg-slate-800/90 border border-slate-700 p-3 rounded-lg"> -->
+                    <!--         <div class="font-bold text-blue-300 mb-1">Step 2: 2D Reshape</div> -->
+                    <!--         <div class="mono text-[11px] text-emerald-300 mb-1">[1, 384, 14, 14]</div> -->
+                    <!--         <p class="text-slate-300 leading-snug">View <code class="text-slate-200">[1,196,384]</code> as <code class="text-slate-200">[1,14,14,384]</code> and permute channels first.</p> -->
+                    <!--     </div> -->
+                    <!--     <div class="bg-slate-800/90 border border-slate-700 p-3 rounded-lg"> -->
+                    <!--         <div class="font-bold text-blue-300 mb-1">Step 3: Interpolate</div> -->
+                    <!--         <div class="mono text-[11px] text-emerald-300 mb-1">14&times;14 &rarr; 24&times;24</div> -->
+                    <!--         <p class="text-slate-300 leading-snug">Apply 2D <code class="text-amber-300">F.interpolate</code> (bicubic, <code class="text-slate-200">align_corners=False</code>).</p> -->
+                    <!--     </div> -->
+                    <!--     <div class="bg-slate-800/90 border border-slate-700 p-3 rounded-lg"> -->
+                    <!--         <div class="font-bold text-blue-300 mb-1">Step 4: Re-Attach</div> -->
+                    <!--         <div class="mono text-[11px] text-emerald-300 mb-1">[1, 578, 384]</div> -->
+                    <!--         <p class="text-slate-300 leading-snug">Permute &amp; flatten to <code class="text-slate-200">[1,576,384]</code>; concat <code class="text-amber-300">[cls, dist, patches]</code>.</p> -->
+                    <!--     </div> -->
+                    <!--     <div class="bg-slate-800/90 border border-slate-700 p-3 rounded-lg"> -->
+                    <!--         <div class="font-bold text-blue-300 mb-1">Step 5: Metadata Sync</div> -->
+                    <!--         <div class="mono text-[11px] text-emerald-300 mb-1">grid_size=(24,24)</div> -->
+                    <!--         <p class="text-slate-300 leading-snug">Update <code class="text-slate-200">patch_embed.img_size = (384,384)</code> to pass internal assertions.</p> -->
+                    <!--     </div> -->
                     </div>
 
-                    <pre class="mt-4 bg-slate-950 text-slate-200 p-3 rounded border border-slate-800 text-[11px] sm:text-xs overflow-x-auto"><code>cls_dist_pe = pos_embed[:, :2, :]                                           # [1, 2, 384]   (Keep special tokens untouched)
-patch_pe    = pos_embed[:, 2:, :].reshape(1, 14, 14, 384).permute(0,3,1,2)  # [1, 384, 14, 14]
-patch_pe    = F.interpolate(patch_pe, size=(24, 24), mode='bicubic', align_corners=False)
-patch_pe    = patch_pe.permute(0, 2, 3, 1).reshape(1, 576, 384)             # [1, 576, 384]
-model.pos_embed = nn.Parameter(torch.cat([cls_dist_pe, patch_pe], dim=1))   # [1, 578, 384]</code></pre>
+                    <pre class="mt-4 bg-slate-950 text-slate-200 p-3 rounded border border-slate-800 text-[11px] sm:text-xs overflow-x-auto"><code>special_tokens = pos_embed[:, :2]                                                                    # [1, 2, 384]     CLS + DIST
+pre_interpolaton = einops.rearrange(pre_interpolaton, "one (r c) D -&gt; one D r c", r=old_grid)        # [1, 384, 14, 14] (pos_embed[:, 2:])
+post_interpolation = F.interpolate(pre_interpolaton, (new_grid, new_grid), mode=interpolation_mode)  # [1, 384, 24, 24]
+post_interpolation = einops.rearrange(post_interpolation, "one D r c -&gt; one (r c) D")                # [1, 576, 384]
+post_interpolation = torch.cat((special_tokens, post_interpolation), dim=1)                          # [1, 578, 384]</code></pre>
                 </div>
             </div>
 
@@ -379,20 +382,20 @@ model.pos_embed = nn.Parameter(torch.cat([cls_dist_pe, patch_pe], dim=1))   # [1
                     </table>
 
                     <div class="bg-white border border-slate-200 rounded p-3 text-xs text-slate-700 leading-relaxed">
-                        <strong>Takeaway:</strong> Simply feeding more pixels <em>without weight adaptation</em> degrades accuracy by ~0.5%. Smooth interpolation (bilinear/bicubic) outperforms blocky nearest-neighbor steps, but frozen attention heads are uncalibrated for 576 tokens.
+                        <strong>Takeaway:</strong> Simply feeding more pixels <em>without weight adaptation</em> degrades accuracy by ~0.5%.
                     </div>
                 </div>
 
                 <!-- Right: The 224 Control Experiment -->
                 <div class="lg:col-span-6 bg-blue-50/70 border-2 border-blue-600 rounded-xl p-5 flex flex-col justify-between">
                     <div>
-                        <div class="flex items-center justify-between mb-1">
-                            <span class="text-xs font-bold uppercase text-blue-800">Experiment 1B: Answering the Task Hint</span>
-                            <span class="bg-blue-600 text-white text-[11px] font-bold px-2 py-0.5 rounded">Scientific Control</span>
-                        </div>
+                        <!-- <div class="flex items-center justify-between mb-1"> -->
+                        <!--     <span class="text-xs font-bold uppercase text-blue-800">Experiment 1B: Answering the Task Hint</span> -->
+                        <!--     <span class="bg-blue-600 text-white text-[11px] font-bold px-2 py-0.5 rounded">Scientific Control</span> -->
+                        <!-- </div> -->
                         <h3 class="text-base font-bold text-slate-900 mb-2">Isolating Domain Adaptation vs. Resolution Gain</h3>
                         <p class="text-xs sm:text-sm text-slate-700 leading-relaxed mb-4">
-                            <strong>The Confounding Variable:</strong> Pre-trained DeiT-S outputs 1,000 ImageNet classes. If we fine-tune at 384&times;384 for 11 epochs and beat 97.20%, did the gain come from <em>seeing more pixels</em> or simply from <em>11 epochs of dog-breed specialization</em>?
+                            <strong>The Confounding Variable:</strong> Did the gain come from <em>seeing more pixels</em> or simply from <em>11 epochs of dog-breed specialization</em>?
                         </p>
 
                         <!-- Control Result Card -->
@@ -412,10 +415,10 @@ model.pos_embed = nn.Parameter(torch.cat([cls_dist_pe, patch_pe], dim=1))   # [1
                         </div>
                     </div>
 
-                    <div class="bg-slate-900 text-white rounded-lg p-3.5 text-xs sm:text-sm">
-                        <span class="text-amber-400 font-bold uppercase">Methodological Rule:</span>
-                        Domain adaptation alone accounts for <strong>+0.10%</strong>. Therefore, <strong>97.30%</strong> is our true benchmark. Any 384&times;384 method must exceed <strong>97.30%</strong> to claim that resolution helps.
-                    </div>
+                    <!-- <div class="bg-slate-900 text-white rounded-lg p-3.5 text-xs sm:text-sm"> -->
+                    <!--     <span class="text-amber-400 font-bold uppercase">Methodological Rule:</span> -->
+                    <!--     Domain adaptation alone accounts for <strong>+0.10%</strong>. Therefore, <strong>97.30%</strong> is our true benchmark. Any 384&times;384 method must exceed <strong>97.30%</strong> to claim that resolution helps. -->
+                    <!-- </div> -->
                 </div>
             </div>
 
