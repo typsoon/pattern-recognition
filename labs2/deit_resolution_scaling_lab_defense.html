@@ -42,6 +42,14 @@
             background: #94a3b8;
             border-radius: 3px;
         }
+        /* Placeholders: fill in after re-running exp_b / exp_d (search for "todo") */
+        .todo {
+            background: #fef08a;
+            color: #713f12;
+            padding: 0 4px;
+            border-radius: 3px;
+            font-weight: 700;
+        }
         /* Print All Mode */
         body.print-mode {
             background-color: #f8fafc;
@@ -108,7 +116,7 @@
              ========================================== -->
         <section class="slide-card active w-full max-w-6xl bg-white rounded-xl shadow-2xl border border-slate-200 flex-col justify-between overflow-hidden" data-presenter="Shared Intro (~0:30)">
             <div class="h-2 bg-gradient-to-r from-blue-800 via-indigo-700 to-emerald-600"></div>
-            
+
             <div class="p-8 sm:p-12 md:p-16 flex-1 flex flex-col justify-center">
                 <div class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-blue-800 bg-blue-50 border border-blue-200 px-3 py-1 rounded-md w-fit mb-6">
                     Pattern Recognition Lab 2 &bull; Jagiellonian University &bull; October 2026 &bull; [Group ID / Room]
@@ -131,7 +139,7 @@
                     <div class="bg-slate-50 p-4 rounded-lg border-l-4 border-indigo-600">
                         <div class="text-xs font-bold uppercase text-indigo-700 tracking-wider mb-1">Part 2 &bull; Slides 5–7 (~3.5m)</div>
                         <div class="font-bold text-slate-900 text-base mb-1">Gabriela Pietras</div>
-                        <div class="text-xs text-slate-600 leading-relaxed">Parameter-Efficient Probing, Coordinate Drift &amp; Selective Layer Freezing</div>
+                        <div class="text-xs text-slate-600 leading-relaxed">Linear Probing (B1/B2) &amp; Selective Layer Freezing (D)</div>
                     </div>
                     <div class="bg-slate-50 p-4 rounded-lg border-l-4 border-emerald-600">
                         <div class="text-xs font-bold uppercase text-emerald-700 tracking-wider mb-1">Part 3 &bull; Slides 8–11 (~3.0m)</div>
@@ -190,7 +198,7 @@
                     <div class="bg-slate-50 border border-slate-200 rounded-lg p-4">
                         <div class="text-xs font-bold uppercase text-slate-500 mb-2">Experimental Constraints &amp; Protocol</div>
                         <ul class="text-xs sm:text-sm text-slate-700 space-y-1.5 list-disc list-inside">
-                            <li><strong>Backbone:</strong> Distilled <code class="bg-slate-200 px-1 rounded">deit_small_distilled_patch16_224</code> (21.8M params).</li>
+                            <li><strong>Backbone:</strong> Distilled <code class="bg-slate-200 px-1 rounded">deit_small_distilled_patch16_224</code> (22.4M params).</li>
                             <li><strong>Dataset:</strong> Imagewoof (10 challenging dog breeds from ImageNet; 9,025 train / 3,929 val).</li>
                             <li><strong>Compute Cap:</strong> &le;100,000 images per run &rarr; max <strong>11 epochs</strong> (11 &times; 9,025 = 99,275 images).</li>
                             <li><strong>Evaluation:</strong> Fixed <code class="bg-slate-200 px-1 rounded">evaluate()</code> via 10-class ImageNet logit indexing.</li>
@@ -271,7 +279,7 @@
                 <!-- 5-Step Pipeline Visual -->
                 <div class="bg-slate-900 text-slate-100 rounded-xl p-5 border border-slate-800">
                     <div class="text-xs font-bold uppercase tracking-wider text-blue-400 mb-3">Manual 5-Step Tensor Resizing Pipeline (No Pre-Built timm Helpers)</div>
-                    
+
                     <div class="grid grid-cols-1 md:grid-cols-5 gap-3 text-xs">
                         <div class="bg-slate-800/90 border border-slate-700 p-3 rounded-lg">
                             <div class="font-bold text-blue-300 mb-1">Step 1: Slice Tokens</div>
@@ -432,7 +440,7 @@ model.pos_embed = nn.Parameter(torch.cat([cls_dist_pe, patch_pe], dim=1))   # [1
 
             <div class="p-6 sm:p-8 flex-1 flex flex-col justify-between gap-5">
                 <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-3.5 text-xs sm:text-sm text-slate-800">
-                    <strong>Motivation:</strong> Can we recover the 0-shot accuracy drop and exploit 384&times;384 resolution by training only lightweight output heads or spatial embeddings, avoiding full 22M-parameter backpropagation?
+                    <strong>Motivation:</strong> Can we adapt to 384&times;384 by training only the classification heads (B1), or the heads plus the interpolated positional embedding (B2), while all 12 Transformer blocks stay frozen?
                 </div>
 
                 <!-- Two Columns for B1 and B2 -->
@@ -442,23 +450,23 @@ model.pos_embed = nn.Parameter(torch.cat([cls_dist_pe, patch_pe], dim=1))   # [1
                         <div>
                             <div class="flex items-center justify-between mb-2">
                                 <span class="text-xs font-bold uppercase text-indigo-700 bg-indigo-100 px-2.5 py-0.5 rounded">Solution B1</span>
-                                <span class="mono text-xs text-slate-500">7,700 params (0.04%)</span>
+                                <span class="mono text-xs text-slate-500">770,000 params (3.4%)</span>
                             </div>
                             <h3 class="text-base font-bold text-slate-900 mb-2">Linear Probe (Classification Heads Only)</h3>
                             <ul class="text-xs sm:text-sm text-slate-700 space-y-1.5 list-disc list-inside mb-4">
-                                <li>Freeze entire Transformer backbone + interpolated <code class="bg-slate-200 px-1 rounded">pos_embed</code>.</li>
-                                <li>Train only <code class="bg-slate-200 px-1 rounded">head</code> and <code class="bg-slate-200 px-1 rounded">head_dist</code> on the 10 dog classes.</li>
-                                <li>Optimizer: AdamW (<code class="bg-slate-200 px-1 rounded">lr=1e-3</code>), Cosine Annealing, 11 epochs.</li>
+                                <li>Freeze <code class="bg-slate-200 px-1 rounded">patch_embed</code>, CLS/DIST tokens, all 12 blocks and the interpolated <code class="bg-slate-200 px-1 rounded">pos_embed</code>.</li>
+                                <li>Train only <code class="bg-slate-200 px-1 rounded">head</code> and <code class="bg-slate-200 px-1 rounded">head_dist</code> (the original 1000-class heads), with cross-entropy on the 10 dog logits <code class="bg-slate-200 px-1 rounded">logits[:, to_imagenet]</code> &mdash; the same slice <code class="bg-slate-200 px-1 rounded">evaluate()</code> scores.</li>
+                                <li>AdamW (<code class="bg-slate-200 px-1 rounded">lr=1e-3</code>, <code class="bg-slate-200 px-1 rounded">wd=0.05</code>), cosine to 1e-5, 11 epochs, batch 32; the final-epoch model is reported.</li>
                             </ul>
                         </div>
                         <div class="bg-white border border-slate-200 rounded-lg p-3.5 flex items-center justify-between">
                             <div>
                                 <div class="text-xs text-slate-500">Validation Accuracy @ 384</div>
-                                <div class="text-xs text-amber-700 font-medium">Recovers +0.43% over 0-shot (96.69%)</div>
+                                <div class="text-xs text-emerald-700 font-medium">+0.28% vs 0-shot bicubic (96.69%) &asymp; +11 images</div>
                             </div>
                             <div class="text-right mono">
-                                <div class="text-2xl font-bold text-slate-900">97.12%</div>
-                                <div class="text-xs text-red-600">-0.08% vs 224 base</div>
+                                <div class="text-2xl font-bold text-slate-900">96.97%</div>
+                                <div class="text-xs text-red-600">-0.23% vs 224 base</div>
                             </div>
                         </div>
                     </div>
@@ -468,33 +476,33 @@ model.pos_embed = nn.Parameter(torch.cat([cls_dist_pe, patch_pe], dim=1))   # [1
                         <div>
                             <div class="flex items-center justify-between mb-2">
                                 <span class="text-xs font-bold uppercase text-indigo-700 bg-indigo-100 px-2.5 py-0.5 rounded">Solution B2</span>
-                                <span class="mono text-xs text-slate-500">229,652 params (1.05%)</span>
+                                <span class="mono text-xs text-slate-500">991,952 params (4.4%)</span>
                             </div>
                             <h3 class="text-base font-bold text-slate-900 mb-2">Linear Probe + Positional Embedding Calibration</h3>
                             <ul class="text-xs sm:text-sm text-slate-700 space-y-1.5 list-disc list-inside mb-4">
-                                <li><strong>Hypothesis:</strong> Bicubic 24&times;24 <code class="bg-slate-200 px-1 rounded">pos_embed</code> is smooth but uncalibrated to frozen attention heads.</li>
-                                <li>Unfreeze <code class="bg-slate-200 px-1 rounded">pos_embed</code> (<code class="bg-slate-200 px-1 rounded">lr=1e-4</code>) alongside heads (<code class="bg-slate-200 px-1 rounded">lr=1e-3</code>).</li>
-                                <li>Backbone blocks 0–11 remain completely frozen.</li>
+                                <li><strong>Hypothesis:</strong> bicubic 24&times;24 <code class="bg-slate-200 px-1 rounded">pos_embed</code> is geometrically smooth, but the frozen attention layers never saw 24&times;24 positions.</li>
+                                <li>Unfreeze <code class="bg-slate-200 px-1 rounded">pos_embed</code> (<code class="bg-slate-200 px-1 rounded">lr=1e-4</code>) alongside heads (<code class="bg-slate-200 px-1 rounded">lr=1e-3</code>); cosine to 1e-6.</li>
+                                <li>Blocks 0–11 stay frozen, but gradients still flow back through all of them to reach <code class="bg-slate-200 px-1 rounded">pos_embed</code> (it is added before block 0).</li>
                             </ul>
                         </div>
                         <div class="bg-white border border-slate-200 rounded-lg p-3.5 flex items-center justify-between">
                             <div>
                                 <div class="text-xs text-slate-500">Validation Accuracy @ 384</div>
-                                <div class="text-xs text-red-600 font-medium">Worse than keeping PE frozen (B1)!</div>
+                                <div class="text-xs text-emerald-700 font-medium">B2 &minus; B1: +0.18% (&asymp; +7 images)</div>
                             </div>
                             <div class="text-right mono">
-                                <div class="text-2xl font-bold text-slate-900">97.07%</div>
-                                <div class="text-xs text-red-600">-0.13% vs 224 base</div>
+                                <div class="text-2xl font-bold text-slate-900">97.15%</div>
+                                <div class="text-xs text-red-600">-0.05% vs 224 base</div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Diagnostic Insight Box -->
+                <!-- How to read B2 vs B1 -->
                 <div class="bg-slate-900 text-white rounded-lg p-4 text-xs sm:text-sm flex items-center gap-3">
-                    <span class="bg-amber-500 text-slate-950 font-bold px-2 py-1 rounded text-xs uppercase shrink-0">Diagnostic Insight</span>
+                    <span class="bg-amber-500 text-slate-950 font-bold px-2 py-1 rounded text-xs uppercase shrink-0">Reading B2 vs B1</span>
                     <p class="text-slate-200">
-                        Why did B2 underperform B1? Updating <code class="text-amber-300">pos_embed</code> at the input layer while keeping all 12 self-attention <code class="text-amber-300">W_Q, W_K</code> projection matrices frozen causes <strong>coordinate drift</strong>—shifting token representations out of the subspace expected by frozen intermediate blocks.
+                        B2 &minus; B1 isolates the effect of training <code class="text-amber-300">pos_embed</code>: <strong>+0.18 pp = 7 of 3,929 images</strong>. That points the way our hypothesis predicts (the interpolated positions benefit from calibration), but it comes from a single run and one image is 0.025 pp, so the gap is small. Neither probe reaches the 97.20% baseline at 224.
                     </p>
                 </div>
             </div>
@@ -502,7 +510,7 @@ model.pos_embed = nn.Parameter(torch.cat([cls_dist_pe, patch_pe], dim=1))   # [1
             <!-- Speaker Notes -->
             <div class="speaker-notes bg-amber-50/90 border-t border-amber-200 px-6 py-3.5 text-xs sm:text-sm text-amber-950">
                 <span class="font-bold uppercase tracking-wider text-amber-800 mr-2">[Speaker Notes — Gabriela]:</span>
-                In Part 2, we asked whether we can adapt to 384x384 parameter-efficiently without retraining all 22 million weights. In Solution B1, training only the dual classification heads—just 0.04% of the model—recovered accuracy from 96.69% to 97.12%, still falling short of the 97.20% baseline. In Solution B2, we also unfroze the interpolated positional embedding, expecting spatial calibration to help; instead, accuracy slipped to 97.07% because shifting input coordinates against frozen self-attention projections induces coordinate drift.
+                In Part 2, we asked whether we can adapt to 384x384 by training only a small part of the model. In Solution B1 we train only the two classification heads, about 3.4% of the parameters, on the 10 dog outputs of the original 1000-class heads; it reached 96.97% at 384: 11 images better than the 96.69% zero-shot model, but 9 images below the untouched model at 224, which gets 97.20%. In Solution B2 we also train the interpolated positional embedding, so that positions can adapt to the 24x24 grid; it reached 97.15%. B2 beats B1 by 0.18 points, which is 7 validation images from a single run: it points in the direction of our hypothesis, but the gap is small, and neither probe beats the 224 baseline.
             </div>
         </section>
 
@@ -513,7 +521,7 @@ model.pos_embed = nn.Parameter(torch.cat([cls_dist_pe, patch_pe], dim=1))   # [1
             <div class="bg-slate-900 text-white px-6 py-3.5 flex items-center justify-between">
                 <div class="flex items-center gap-3">
                     <span class="bg-indigo-600 text-xs font-bold px-2 py-0.5 rounded">PART 2 &bull; Gabriela Pietras</span>
-                    <h2 class="text-lg sm:text-xl font-bold">Solution D: Selective Layer Freezing &amp; Hard Distillation</h2>
+                    <h2 class="text-lg sm:text-xl font-bold">Solution D: Selective Layer Freezing</h2>
                 </div>
                 <span class="text-xs text-slate-400 mono">Slide 6 / 11</span>
             </div>
@@ -522,21 +530,25 @@ model.pos_embed = nn.Parameter(torch.cat([cls_dist_pe, patch_pe], dim=1))   # [1
                 <!-- Left: Architectural Setup -->
                 <div class="lg:col-span-7 space-y-4">
                     <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
-                        <div class="text-xs font-bold uppercase text-indigo-700 mb-1">Architectural Hypothesis</div>
-                        <p class="text-xs sm:text-sm text-slate-700 leading-relaxed">
-                            Early ViT blocks (0–7) extract local, resolution-agnostic edge and texture primitives. Late blocks (8–11) aggregate global spatial context over the 24&times;24 grid. Unfreezing the top 4 blocks alongside <code class="bg-slate-200 px-1 rounded">pos_embed</code> should resolve coordinate drift.
+                        <div class="text-xs font-bold uppercase text-indigo-700 mb-1">Architectural Hypothesis (What D Tests)</div>
+                        <p class="text-xs sm:text-sm text-slate-700 leading-relaxed mb-2">
+                            Early blocks (0–7) mostly capture lower-level features learned well on ImageNet; freezing them cuts the number of trainable parameters and may reduce overfitting on 9,025 images. Late blocks (8–11) are given the chance to adapt to the 24&times;24 grid.
+                        </p>
+                        <p class="text-xs text-slate-600 leading-relaxed">
+                            <strong>Caveat:</strong> <code class="bg-slate-200 px-1 rounded">pos_embed</code> is added before block 0, and each 16&times;16 patch covers a smaller part of the dog at 384, so the frozen blocks also see shifted inputs and cannot adapt to them.
                         </p>
                     </div>
 
                     <!-- Block Diagram -->
                     <div class="bg-slate-900 text-white rounded-xl p-4 border border-slate-800">
-                        <div class="text-xs font-bold uppercase text-slate-400 mb-3">Parameter Allocation (7.33M Trainable / 33.6% of Model)</div>
+                        <div class="text-xs font-bold uppercase text-slate-400 mb-3">Parameter Allocation (8.09M Trainable / 35.8% of Model)</div>
                         <div class="grid grid-cols-3 gap-2.5 text-xs text-center">
                             <div class="bg-slate-800 border border-slate-700 p-3 rounded">
-                                <div class="text-slate-400 font-bold mb-1">FROZEN (66.4%)</div>
+                                <div class="text-slate-400 font-bold mb-1">FROZEN (64.2%)</div>
                                 <div class="mono text-[11px] text-slate-300">patch_embed</div>
+                                <div class="mono text-[11px] text-slate-300">CLS / DIST tokens</div>
                                 <div class="mono text-[11px] text-slate-300">Blocks 0 &ndash; 7</div>
-                                <div class="text-[10px] text-slate-400 mt-1">lr = 0</div>
+                                <div class="text-[10px] text-slate-400 mt-1">not trained</div>
                             </div>
                             <div class="bg-indigo-950 border border-indigo-500 p-3 rounded">
                                 <div class="text-indigo-300 font-bold mb-1">TRAINABLE BACKBONE</div>
@@ -553,40 +565,47 @@ model.pos_embed = nn.Parameter(torch.cat([cls_dist_pe, patch_pe], dim=1))   # [1
                         </div>
                     </div>
 
-                    <!-- Hard Distillation Loss -->
+                    <!-- Training Objective -->
                     <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
-                        <div class="text-xs font-bold uppercase text-slate-500 mb-1.5">DeiT Hard Knowledge Distillation Objective</div>
+                        <div class="text-xs font-bold uppercase text-slate-500 mb-1.5">Training Objective (Same as B and C)</div>
                         <p class="text-xs text-slate-700 mb-2">
-                            To preserve the inductive bias of the <code class="bg-slate-200 px-1 rounded">dist_token</code>, we run a frozen <strong>DeiT-S @ 224&times;224 teacher</strong> in parallel to generate hard pseudo-labels <code class="bg-slate-200 px-1 rounded">y_teacher</code>:
+                            Plain cross-entropy on the 10 dog logits. In training mode timm returns the average of the two heads, so one loss trains both:
                         </p>
                         <div class="bg-white border border-slate-200 p-2.5 rounded mono text-xs text-center text-slate-900 font-semibold">
-                            &Lscr;<sub>total</sub> = 0.5 &middot; CE<sub>smooth=0.1</sub>(z<sub>cls</sub>, y<sub>true</sub>) + 0.5 &middot; CE<sub>hard</sub>(z<sub>dist</sub>, y<sub>teacher@224</sub>)
+                            &Lscr; = CE( &frac12;(z<sub>cls</sub> + z<sub>dist</sub>)[:, to_imagenet], y<sub>true</sub> )
                         </div>
+                        <p class="text-xs text-slate-600 mt-2">
+                            No teacher / distillation: D keeps the same loss as C, so D vs C isolates the effect of freezing. AdamW (<code class="bg-slate-200 px-1 rounded">wd=0.05</code>), cosine to 1e-6, 11 epochs, batch 32.
+                        </p>
                     </div>
                 </div>
 
                 <!-- Right: Results & Analysis -->
                 <div class="lg:col-span-5 flex flex-col justify-between space-y-4">
                     <div class="bg-slate-900 text-white rounded-xl p-5 border border-slate-800">
-                        <div class="text-xs font-bold uppercase text-indigo-400 mb-1">Solution D Result (11 Epochs)</div>
-                        <div class="text-sm text-slate-300 mb-4">Blocks 8–11 + PE + Dual Heads + Teacher@224</div>
+                        <div class="text-xs font-bold uppercase text-indigo-400 mb-1">Solution D Result (11 Epochs, Final Epoch)</div>
+                        <div class="text-sm text-slate-300 mb-4">Blocks 8–11 + PE + norm + both heads</div>
                         <div class="flex items-baseline justify-between border-t border-slate-800 pt-3 mb-2">
                             <span class="text-xs uppercase text-slate-400">Validation Accuracy:</span>
-                            <span class="mono text-3xl font-bold text-amber-400">97.15%</span>
+                            <span class="mono text-3xl font-bold text-amber-400">97.20%</span>
                         </div>
                         <div class="flex justify-between text-xs mono text-slate-400">
-                            <span>vs 224 0-Shot (97.20%): <strong class="text-red-400">-0.05%</strong></span>
-                            <span>vs 224 Control (97.30%): <strong class="text-red-400">-0.15%</strong></span>
+                            <span>vs 224 0-Shot (97.20%): <strong class="text-slate-200">+0.00%</strong> (same 3,819 imgs)</span>
+                            <span>vs 224 Control (97.30%): <strong class="text-red-400">-0.10%</strong></span>
+                        </div>
+                        <div class="flex justify-between text-xs mono text-slate-400 mt-2 pt-2 border-t border-slate-800">
+                            <span>Same D recipe @224: <strong class="text-slate-200">97.38%</strong></span>
+                            <span>384 vs 224: <strong class="text-red-400">-0.18% (-7 imgs)</strong></span>
                         </div>
                     </div>
 
                     <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs sm:text-sm text-slate-800 space-y-2">
-                        <div class="font-bold text-amber-900 uppercase text-xs">Why Did Solution D Still Ceiling at 97.15%?</div>
+                        <div class="font-bold text-amber-900 uppercase text-xs">How to Read D</div>
                         <p class="leading-relaxed">
-                            1. <strong>Early Attention Bottleneck:</strong> Blocks 0–7 are NOT purely local filters; their self-attention layers still compute global 576&times;576 softmax maps with frozen weights calibrated for 196 tokens.
+                            1. <strong>D vs C</strong> (same loss, everything trainable): the effect of freezing blocks 0–7. <strong>D vs B2</strong>: the effect of also training blocks 8–11 and the final norm.
                         </p>
                         <p class="leading-relaxed">
-                            2. <strong>Teacher Ceiling:</strong> Hard distillation from a 224&times;224 teacher anchors the student to 224-level representations rather than letting it discover finer 384&times;384 details.
+                            2. <strong>Possible explanation if D trails C</strong> (hypothesis, not measured): blocks 0–7 are not purely local filters; their self-attention spans all 578 tokens with weights trained for 198, and frozen, they cannot recalibrate.
                         </p>
                     </div>
                 </div>
@@ -595,18 +614,18 @@ model.pos_embed = nn.Parameter(torch.cat([cls_dist_pe, patch_pe], dim=1))   # [1
             <!-- Speaker Notes -->
             <div class="speaker-notes bg-amber-50/90 border-t border-amber-200 px-6 py-3.5 text-xs sm:text-sm text-amber-950">
                 <span class="font-bold uppercase tracking-wider text-amber-800 mr-2">[Speaker Notes — Gabriela]:</span>
-                To fix coordinate drift while keeping training lightweight, Solution D unfroze the last four Transformer blocks—about 33.6% of the model—alongside the positional embedding and heads, coupled with hard distillation from a frozen 224x224 teacher. While this raised accuracy to 97.15%, it still failed to beat our 97.20% zero-shot baseline or the 97.30% control. Even early Vision Transformer blocks compute global self-attention, so keeping blocks 0 through 7 frozen bottlenecks the representation before it ever reaches block 8.
+                Solution D sits between B and C: the patch embedding, the CLS and DIST tokens and blocks 0 to 7 stay frozen, while blocks 8 to 11, the final norm, the positional embedding and both heads are trained, about 8.1 million parameters or 36% of the model. The loss is the same plain cross-entropy as in B and C, with no teacher, so comparing D with C shows the effect of freezing alone. D reached 97.20%, exactly the same 3,819 correct images as the untouched model at 224, and 0.10 points below the 97.30% fine-tuning control. When we run the very same D recipe at 224, it gets 97.38%, so at 384 the same recipe loses 7 images. During training the training loss kept falling, from about 0.21 to 0.10, while validation stayed around 97.1 to 97.2%: the extra trainable parameters fit the training photos better without helping on new ones. Our hypothesis is that even early ViT blocks use global self-attention over all 578 tokens, so keeping them frozen limits how far the model can adapt to the new resolution; we did not measure this directly.
             </div>
         </section>
 
         <!-- ==========================================
-             SLIDE 7: PART 2 SYNTHESIS — WHY PARTIAL TUNING FAILS
+             SLIDE 7: PART 2 SYNTHESIS
              ========================================== -->
         <section class="slide-card w-full max-w-6xl bg-white rounded-xl shadow-2xl border border-slate-200 flex-col justify-between overflow-hidden" data-presenter="Part 2: Gabriela Pietras (~1:00)">
             <div class="bg-slate-900 text-white px-6 py-3.5 flex items-center justify-between">
                 <div class="flex items-center gap-3">
                     <span class="bg-indigo-600 text-xs font-bold px-2 py-0.5 rounded">PART 2 &bull; Gabriela Pietras</span>
-                    <h2 class="text-lg sm:text-xl font-bold">Part 2 Synthesis: Why Partial Tuning Underperforms at 384&times;384</h2>
+                    <h2 class="text-lg sm:text-xl font-bold">Part 2 Synthesis: What Partial Tuning Tells Us at 384&times;384</h2>
                 </div>
                 <span class="text-xs text-slate-400 mono">Slide 7 / 11</span>
             </div>
@@ -614,7 +633,7 @@ model.pos_embed = nn.Parameter(torch.cat([cls_dist_pe, patch_pe], dim=1))   # [1
             <div class="p-6 sm:p-8 flex-1 flex flex-col justify-between gap-5">
                 <!-- Summary Table of Partial Methods -->
                 <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
-                    <div class="text-xs font-bold uppercase text-slate-500 mb-2">Comparative Summary: Parameter-Efficient &amp; Partial Adaptation @ 384&times;384</div>
+                    <div class="text-xs font-bold uppercase text-slate-500 mb-2">Comparative Summary: Parameter-Efficient &amp; Partial Adaptation (fixed evaluate(), final epoch)</div>
                     <table class="w-full text-left border-collapse text-xs sm:text-sm">
                         <thead>
                             <tr class="border-b-2 border-slate-300 text-slate-700">
@@ -646,45 +665,67 @@ model.pos_embed = nn.Parameter(torch.cat([cls_dist_pe, patch_pe], dim=1))   # [1
                             <tr>
                                 <td class="py-2 px-2 font-sans">Solution B1: Linear Probe (Heads)</td>
                                 <td class="py-2 text-center">384&sup2;</td>
-                                <td class="py-2 text-right">7.7K (0.04%)</td>
-                                <td class="py-2 text-right">97.12%</td>
-                                <td class="py-2 text-right text-red-600">-0.08%</td>
-                                <td class="py-2 text-right text-red-600">-0.18%</td>
+                                <td class="py-2 text-right">770K (3.4%)</td>
+                                <td class="py-2 text-right">96.97%</td>
+                                <td class="py-2 text-right text-red-600">-0.23%</td>
+                                <td class="py-2 text-right text-red-600">-0.33%</td>
                             </tr>
                             <tr>
                                 <td class="py-2 px-2 font-sans">Solution B2: Probe + pos_embed</td>
                                 <td class="py-2 text-center">384&sup2;</td>
-                                <td class="py-2 text-right">229.7K (1.05%)</td>
-                                <td class="py-2 text-right">97.07%</td>
-                                <td class="py-2 text-right text-red-600">-0.13%</td>
-                                <td class="py-2 text-right text-red-600">-0.23%</td>
-                            </tr>
-                            <tr class="bg-indigo-50/60 font-semibold">
-                                <td class="py-2 px-2 font-sans">Solution D: Blocks 8–11 + PE + Distil</td>
-                                <td class="py-2 text-center">384&sup2;</td>
-                                <td class="py-2 text-right">7.33M (33.6%)</td>
-                                <td class="py-2 text-right text-indigo-900">97.15%</td>
+                                <td class="py-2 text-right">992K (4.4%)</td>
+                                <td class="py-2 text-right">97.15%</td>
                                 <td class="py-2 text-right text-red-600">-0.05%</td>
                                 <td class="py-2 text-right text-red-600">-0.15%</td>
                             </tr>
+                            <tr class="bg-indigo-50/60 font-semibold">
+                                <td class="py-2 px-2 font-sans">Solution D: Blocks 8–11 + PE + Heads</td>
+                                <td class="py-2 text-center">384&sup2;</td>
+                                <td class="py-2 text-right">8.09M (35.8%)</td>
+                                <td class="py-2 text-right text-indigo-900">97.20%</td>
+                                <td class="py-2 text-right text-slate-500">0.00%</td>
+                                <td class="py-2 text-right text-red-600">-0.10%</td>
+                            </tr>
+                            <tr class="bg-blue-50/60">
+                                <td class="py-2 px-2 font-sans italic">Control: B1 recipe @ 224</td>
+                                <td class="py-2 text-center">224&sup2;</td>
+                                <td class="py-2 text-right">770K (3.4%)</td>
+                                <td class="py-2 text-right font-semibold text-blue-800">97.40%</td>
+                                <td class="py-2 text-right text-emerald-700">+0.20%</td>
+                                <td class="py-2 text-right text-emerald-700">+0.10%</td>
+                            </tr>
+                            <tr class="bg-blue-50/60">
+                                <td class="py-2 px-2 font-sans italic">Control: D recipe @ 224</td>
+                                <td class="py-2 text-center">224&sup2;</td>
+                                <td class="py-2 text-right">7.94M (35.4%)</td>
+                                <td class="py-2 text-right font-semibold text-blue-800">97.38%</td>
+                                <td class="py-2 text-right text-emerald-700">+0.18%</td>
+                                <td class="py-2 text-right text-emerald-700">+0.08%</td>
+                            </tr>
                         </tbody>
                     </table>
+                    <div class="text-xs text-slate-700 mt-2 mono">Same recipe, 384 &minus; 224: &nbsp;B1 <strong class="text-red-600">-0.43% (-17 images)</strong> &nbsp;&bull;&nbsp; D <strong class="text-red-600">-0.18% (-7 images)</strong></div>
                 </div>
 
-                <!-- Mathematical Mechanism Explanation -->
+                <!-- Interpretation -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <div class="bg-red-50 border border-red-200 rounded-xl p-4">
-                        <div class="text-xs font-bold uppercase text-red-800 mb-1">Verdict for Partial Adaptation</div>
-                        <div class="text-base font-bold text-slate-900 mb-2">Under Partial Tuning, Seeing More Pixels Hurts.</div>
-                        <p class="text-xs sm:text-sm text-slate-700 leading-relaxed">
-                            Every partial tuning strategy (0.04% up to 33.6% of parameters) finished below both the <strong>97.20%</strong> zero-shot baseline and the <strong>97.30%</strong> 224 control.
+                    <div class="bg-indigo-50 border border-indigo-200 rounded-xl p-4">
+                        <div class="text-xs font-bold uppercase text-indigo-800 mb-1">How to Read This Table</div>
+                        <p class="text-xs sm:text-sm text-slate-700 leading-relaxed mb-2">
+                            <strong>Fair resolution test:</strong> the same recipe at 224 and at 384, so only the resolution changes. (The 97.30% control is <em>full</em> fine-tuning, which would change two things at once.)
+                        </p>
+                        <p class="text-xs sm:text-sm text-slate-700 leading-relaxed mb-2">
+                            <strong>Scale:</strong> one validation image is 0.025 pp; every number is a single run, and accuracy moved by up to ~11 images between epochs.
+                        </p>
+                        <p class="text-xs sm:text-sm text-slate-900 leading-relaxed">
+                            <strong>Verdict:</strong> with partial tuning, seeing more pixels did <strong>not</strong> help. The same recipe at 384 scored lower than at 224: 17 images for B1, 7 for D. What helped was training on the dogs: B1 at 224 reached 97.40%. The gap shrinks as more of the model is trained (&minus;17 &rarr; &minus;7 images).
                         </p>
                     </div>
 
                     <div class="bg-slate-900 text-white rounded-xl p-4">
-                        <div class="text-xs font-bold uppercase text-indigo-400 mb-1">Root Cause: Quadratic Attention Entropy Shift</div>
+                        <div class="text-xs font-bold uppercase text-indigo-400 mb-1">Possible Mechanism (Hypothesis, Not Measured)</div>
                         <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                            Self-attention scales as <span class="mono text-emerald-400">O(N&sup2;)</span>: attention matrices jump from <span class="mono text-white">198&times;198 (39,204 pairs)</span> to <span class="mono text-white">578&times;578 (334,084 pairs)</span>—an <strong>8.5&times; increase</strong>. Softmax probability mass is diluted across 3&times; more patches in <em>every</em> layer, requiring global recalibration of all 12 blocks.
+                            Going from <span class="mono text-white">198</span> to <span class="mono text-white">578</span> tokens grows each attention matrix from <span class="mono text-white">39,204</span> to <span class="mono text-white">334,084</span> pairs (<strong>8.5&times;</strong>), and every softmax is spread over ~3&times; more tokens in <em>every</em> block. Frozen blocks cannot recalibrate to this. Consistent with that, the 384 penalty is largest when everything but the heads is frozen (B1, &minus;17 images) and smaller when blocks 8&ndash;11 also train (D, &minus;7). A direct test would compare attention entropy at 224 and 384.
                         </p>
                     </div>
                 </div>
@@ -693,7 +734,7 @@ model.pos_embed = nn.Parameter(torch.cat([cls_dist_pe, patch_pe], dim=1))   # [1
             <!-- Speaker Notes -->
             <div class="speaker-notes bg-amber-50/90 border-t border-amber-200 px-6 py-3.5 text-xs sm:text-sm text-amber-950">
                 <span class="font-bold uppercase tracking-wider text-amber-800 mr-2">[Speaker Notes — Gabriela]:</span>
-                Summarizing Part 2: if you only partially adapt a Vision Transformer, seeing more pixels does not help—our best partial setup reached 97.15%, still below the 97.20% baseline. Because self-attention scales quadratically with token count, jumping from 198 to 578 tokens expands the attention matrix by 8.5x and alters softmax entropy in every single block from layer 0 upward. I now pass to Vitaliy Khomyn to show what happens when we unlock the full network.
+                To summarize Part 2: at 384, B1 reached 96.97%, B2 97.15% and D 97.20%, so none of them beats the untouched model at 224. To answer the task hint about what to compare with, we also ran the very same B1 and D recipes at 224, so that only the resolution changes. At 224 they reach 97.40% and 97.38%. So with the same recipe, going to 384 costs 17 images for B1 and 7 images for D. With partial tuning, seeing more pixels does not help; the gain over the untrained model comes from training on the dog classes, not from the extra pixels. The penalty shrinks as more of the model is trained, from 17 to 7 images. These are single runs, and one image is 0.025 points, so the 7-image gap for D is small, while the 17-image gap for B1 is clearer. One possible explanation is that going from 198 to 578 tokens changes attention in every block, which frozen blocks cannot adapt to; we did not measure this directly. I now pass to Vitaliy Khomyn to show what happens when we unlock the full network.
             </div>
         </section>
 
@@ -715,13 +756,13 @@ model.pos_embed = nn.Parameter(torch.cat([cls_dist_pe, patch_pe], dim=1))   # [1
                     <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
                         <div class="text-xs font-bold uppercase text-emerald-800 mb-1">Hypothesis &amp; Strategy</div>
                         <p class="text-xs sm:text-sm text-slate-800 leading-relaxed">
-                            Since 576-patch sequences shift query-key distributions across all 12 blocks, we unfreeze <strong>100% of parameters (21.8M)</strong>, using differential learning rates so resized components adapt rapidly without destroying pre-trained backbone features.
+                            Since 576-patch sequences shift query-key distributions across all 12 blocks, we unfreeze <strong>100% of parameters (22.6M)</strong>, using differential learning rates so resized components adapt rapidly without destroying pre-trained backbone features.
                         </p>
                     </div>
 
                     <!-- Differential LR Table -->
                     <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
-                        <div class="text-xs font-bold uppercase text-slate-500 mb-2">Differential Learning Rate &amp; Stability Recipe (AdamW, wd=1e-4)</div>
+                        <div class="text-xs font-bold uppercase text-slate-500 mb-2">Differential Learning Rate &amp; Stability Recipe (AdamW, wd=0.05)</div>
                         <div class="grid grid-cols-3 gap-3 text-center mb-3">
                             <div class="bg-white p-3 rounded border border-slate-200">
                                 <div class="text-xs font-semibold text-slate-500">Backbone (Blocks 0–11)</div>
@@ -799,7 +840,7 @@ model.pos_embed = nn.Parameter(torch.cat([cls_dist_pe, patch_pe], dim=1))   # [1
             <!-- Speaker Notes -->
             <div class="speaker-notes bg-amber-50/90 border-t border-amber-200 px-6 py-3.5 text-xs sm:text-sm text-amber-950">
                 <span class="font-bold uppercase tracking-wider text-amber-800 mr-2">[Speaker Notes — Vitaliy]:</span>
-                In Solution C, we unfroze all 21.8 million parameters and applied differential learning rates: 1e-5 on the Transformer blocks to preserve pre-trained features, and a 10x higher rate of 1e-4 on the interpolated positional embeddings and heads. Already by Epoch 1, validation accuracy jumped from 96.69% to 97.38%, peaking at 97.63% and stabilizing at 97.58% at Epoch 11. This beats the zero-shot baseline by +0.38% and, crucially, beats our 224 fine-tuning control by +0.28%, proving that higher resolution genuinely helps once all attention layers can adapt.
+                In Solution C, we unfroze all 22.6 million parameters and applied differential learning rates: 1e-5 on the Transformer blocks to preserve pre-trained features, and a 10x higher rate of 1e-4 on the interpolated positional embeddings and heads. Already by Epoch 1, validation accuracy jumped from 96.69% to 97.38%, peaking at 97.63% and stabilizing at 97.58% at Epoch 11. This beats the zero-shot baseline by +0.38% and, crucially, beats our 224 fine-tuning control by +0.28%, proving that higher resolution genuinely helps once all attention layers can adapt.
             </div>
         </section>
 
@@ -955,39 +996,55 @@ model.pos_embed = nn.Parameter(torch.cat([cls_dist_pe, patch_pe], dim=1))   # [1
                             <tr class="bg-blue-50/70 font-semibold">
                                 <td class="py-2 px-3 font-sans text-blue-950">Control Fine-Tuning (Domain Control)</td>
                                 <td class="py-2 px-2 text-center text-blue-950">224&times;224</td>
-                                <td class="py-2 px-2 text-right text-blue-950">21.8M (100%)</td>
+                                <td class="py-2 px-2 text-right text-blue-950">22.4M (100%)</td>
                                 <td class="py-2 px-3 text-right text-blue-800">97.30%</td>
                                 <td class="py-2 px-3 text-right text-emerald-700">+0.10%</td>
                                 <td class="py-2 px-3 text-right text-slate-500">+0.00%</td>
                             </tr>
+                            <tr class="bg-blue-50/40">
+                                <td class="py-2 px-3 font-sans italic text-blue-950">Control: B1 recipe @224</td>
+                                <td class="py-2 px-2 text-center">224&times;224</td>
+                                <td class="py-2 px-2 text-right">770k (3.4%)</td>
+                                <td class="py-2 px-3 text-right text-blue-800">97.40%</td>
+                                <td class="py-2 px-3 text-right text-emerald-700">+0.20%</td>
+                                <td class="py-2 px-3 text-right text-emerald-700">+0.10%</td>
+                            </tr>
+                            <tr class="bg-blue-50/40">
+                                <td class="py-2 px-3 font-sans italic text-blue-950">Control: D recipe @224</td>
+                                <td class="py-2 px-2 text-center">224&times;224</td>
+                                <td class="py-2 px-2 text-right">7.94M (35.4%)</td>
+                                <td class="py-2 px-3 text-right text-blue-800">97.38%</td>
+                                <td class="py-2 px-3 text-right text-emerald-700">+0.18%</td>
+                                <td class="py-2 px-3 text-right text-emerald-700">+0.08%</td>
+                            </tr>
                             <tr>
                                 <td class="py-2 px-3 font-sans">B1: Linear Probe (Heads Only)</td>
                                 <td class="py-2 px-2 text-center">384&times;384</td>
-                                <td class="py-2 px-2 text-right">7.7k (0.04%)</td>
-                                <td class="py-2 px-3 text-right">97.12%</td>
-                                <td class="py-2 px-3 text-right text-red-600">-0.08%</td>
-                                <td class="py-2 px-3 text-right text-red-600">-0.18%</td>
+                                <td class="py-2 px-2 text-right">770k (3.4%)</td>
+                                <td class="py-2 px-3 text-right">96.97%</td>
+                                <td class="py-2 px-3 text-right text-red-600">-0.23%</td>
+                                <td class="py-2 px-3 text-right text-red-600">-0.33%</td>
                             </tr>
                             <tr>
                                 <td class="py-2 px-3 font-sans">B2: Linear Probe + pos_embed</td>
                                 <td class="py-2 px-2 text-center">384&times;384</td>
-                                <td class="py-2 px-2 text-right">229.7k (1.05%)</td>
-                                <td class="py-2 px-3 text-right">97.07%</td>
-                                <td class="py-2 px-3 text-right text-red-600">-0.13%</td>
-                                <td class="py-2 px-3 text-right text-red-600">-0.23%</td>
-                            </tr>
-                            <tr>
-                                <td class="py-2 px-3 font-sans">D: Layer Freezing (8–11) + Hard Distil</td>
-                                <td class="py-2 px-2 text-center">384&times;384</td>
-                                <td class="py-2 px-2 text-right">7.33M (33.6%)</td>
+                                <td class="py-2 px-2 text-right">992k (4.4%)</td>
                                 <td class="py-2 px-3 text-right">97.15%</td>
                                 <td class="py-2 px-3 text-right text-red-600">-0.05%</td>
                                 <td class="py-2 px-3 text-right text-red-600">-0.15%</td>
                             </tr>
+                            <tr>
+                                <td class="py-2 px-3 font-sans">D: Layer Freezing (Blocks 8–11 Trained)</td>
+                                <td class="py-2 px-2 text-center">384&times;384</td>
+                                <td class="py-2 px-2 text-right">8.09M (35.8%)</td>
+                                <td class="py-2 px-3 text-right">97.20%</td>
+                                <td class="py-2 px-3 text-right text-slate-500">+0.00%</td>
+                                <td class="py-2 px-3 text-right text-red-600">-0.10%</td>
+                            </tr>
                             <tr class="bg-emerald-50/50">
                                 <td class="py-2 px-3 font-sans font-medium">E: Progressive Curriculum (4 Stages)</td>
                                 <td class="py-2 px-2 text-center">224&rarr;384</td>
-                                <td class="py-2 px-2 text-right">21.8M (100%)</td>
+                                <td class="py-2 px-2 text-right">22.6M (100%)</td>
                                 <td class="py-2 px-3 text-right font-semibold text-emerald-800">97.38%</td>
                                 <td class="py-2 px-3 text-right text-emerald-700">+0.18%</td>
                                 <td class="py-2 px-3 text-right text-emerald-700">+0.08%</td>
@@ -995,7 +1052,7 @@ model.pos_embed = nn.Parameter(torch.cat([cls_dist_pe, patch_pe], dim=1))   # [1
                             <tr class="bg-emerald-100/90 font-bold border-t-2 border-emerald-500">
                                 <td class="py-2.5 px-3 font-sans text-emerald-950">C: Full Fine-Tuning (Differential LR)</td>
                                 <td class="py-2.5 px-2 text-center text-emerald-950">384&times;384</td>
-                                <td class="py-2.5 px-2 text-right text-emerald-950">21.8M (100%)</td>
+                                <td class="py-2.5 px-2 text-right text-emerald-950">22.6M (100%)</td>
                                 <td class="py-2.5 px-3 text-right text-emerald-900 text-base">97.58%</td>
                                 <td class="py-2.5 px-3 text-right text-emerald-800">+0.38%</td>
                                 <td class="py-2.5 px-3 text-right text-emerald-800">+0.28%</td>
@@ -1012,7 +1069,7 @@ model.pos_embed = nn.Parameter(torch.cat([cls_dist_pe, patch_pe], dim=1))   # [1
                             YES — but ONLY under full end-to-end backbone adaptation.
                         </div>
                         <p class="text-xs sm:text-sm text-slate-300 mt-1">
-                            Without full adaptation, more pixels hurt (<span class="mono text-red-400">96.69%</span> 0-shot, <span class="mono text-red-400">~97.1%</span> partial). With full adaptation, the total gain is <span class="mono text-emerald-400">+0.38%</span> (<span class="mono text-blue-300">+0.10%</span> domain adaptation + <span class="mono text-emerald-400">+0.28%</span> genuine optical resolution gain).
+                            Without full adaptation, more pixels hurt (<span class="mono text-red-400">96.69%</span> 0-shot; partial tuning: <span class="mono text-red-400">96.97–97.20%</span> vs <span class="mono text-blue-300">97.38–97.40%</span> for the same recipes at 224). With full adaptation, the total gain is <span class="mono text-emerald-400">+0.38%</span> (<span class="mono text-blue-300">+0.10%</span> domain adaptation + <span class="mono text-emerald-400">+0.28%</span> genuine optical resolution gain).
                         </p>
                     </div>
                 </div>
@@ -1055,9 +1112,9 @@ model.pos_embed = nn.Parameter(torch.cat([cls_dist_pe, patch_pe], dim=1))   # [1
                     </div>
 
                     <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
-                        <div class="text-xs font-bold uppercase text-indigo-700 mb-1">3. All-or-Nothing ViT Resolution Scaling</div>
+                        <div class="text-xs font-bold uppercase text-indigo-700 mb-1">3. Partial vs. Full Adaptation</div>
                         <p class="text-xs sm:text-sm text-slate-700 leading-relaxed">
-                            Unlike CNNs with local translation-equivariant kernels, ViT attention matrices scale quadratically (<span class="mono">198&sup2; &rarr; 578&sup2;</span>) in every block. Freezing early blocks bottlenecks global token routing.
+                            ViT self-attention spans all tokens in every block (<span class="mono">198&sup2; &rarr; 578&sup2;</span> pairs), so a resolution change reaches every layer, not only the input. Partial tuning (B1, B2, D) reached <strong>96.97–97.20%</strong> at 384, below the same recipes at 224 (<strong>97.38–97.40%</strong>), vs <strong>97.58%</strong> for full fine-tuning; our hypothesis is that frozen blocks limit how far the model can adapt.
                         </p>
                     </div>
 
@@ -1086,7 +1143,7 @@ model.pos_embed = nn.Parameter(torch.cat([cls_dist_pe, patch_pe], dim=1))   # [1
             <!-- Speaker Notes -->
             <div class="speaker-notes bg-amber-50/90 border-t border-amber-200 px-6 py-3.5 text-xs sm:text-sm text-amber-950">
                 <span class="font-bold uppercase tracking-wider text-amber-800 mr-2">[Speaker Notes — Vitaliy]:</span>
-                To conclude: first, 2D bicubic positional interpolation solves the mechanics of scaling to 384x384, but requires weight training to overcome its initial -0.51% drop; second, our 224 control was essential to separate +0.10% domain adaptation from +0.28% optical gain; third, quadratic self-attention shifts require full end-to-end adaptation rather than partial freezing; and fourth, dedicating the full 11-epoch budget directly to 384x384 proved optimal. Thank you, and we are happy to take your questions or walk through our code.
+                To conclude: first, 2D bicubic positional interpolation solves the mechanics of scaling to 384x384, but requires weight training to overcome its initial -0.51% drop; second, our 224 control was essential to separate +0.10% domain adaptation from +0.28% optical gain; third, partial tuning reached 96.97 to 97.20% at 384, below the same recipes at 224, against 97.58% for full fine-tuning, and our hypothesis is that a resolution change reaches every attention layer, so frozen blocks limit adaptation; and fourth, dedicating the full 11-epoch budget directly to 384x384 proved optimal. Thank you, and we are happy to take your questions or walk through our code.
             </div>
         </section>
 
