@@ -1,7 +1,6 @@
 import logging
 import numpy as np
 import torch
-import urllib
 from pathlib import Path
 import urllib.request
 import pandas as pd
@@ -24,7 +23,7 @@ STD = torch.tensor([0.2470, 0.2435, 0.2616], device=device)[None, :, None, None]
 
 
 def normalize(x):
-    return (x - MEAN) / STD  # apply to every crop before it enters the network\n,
+    return (x - MEAN) / STD
 
 
 def load(split):
@@ -33,11 +32,8 @@ def load(split):
     URL = f"https://huggingface.co/datasets/uoft-cs/cifar10/resolve/main/plain_text/{fname}"
     fpath = Path.cwd() / fname
     if not fpath.exists():
-        logging.log(logging.INFO, f"File {fpath} missing. Starting the download")
-        urllib.request.urlretrieve(URL, fname)
-        # response = requests.get(URL, timeout=120)
-        # response.raise_for_status()
-        # table = pd.read_parquet(io.BytesIO(response.content))
+        logging.info("File %s missing. Starting the download", fpath)
+        urllib.request.urlretrieve(URL, fpath)
 
     table = pd.read_parquet(fpath)
     images = np.stack(

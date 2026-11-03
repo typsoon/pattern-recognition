@@ -15,7 +15,7 @@ def cached_train_dino(train_fn, make_network, name=None, **kwargs):
     name = name or "dino" + "".join(f"_{k}={v}" for k, v in sorted(kwargs.items()))
     path = CHECKPOINT_DIR / f"{name}.pt"
     if path.exists():
-        logging.log(logging.INFO, f"Loading {path}")  # noqa: LOG015
+        logging.info("Loading %s", path)
         saved = torch.load(path, map_location=device)
         student = make_network(saved["K"]).to(device)
         teacher = make_network(saved["K"]).to(device)
@@ -42,5 +42,5 @@ def cached_train_dino(train_fn, make_network, name=None, **kwargs):
         },
         path,
     )
-    logging.log(logging.INFO, f"Saved {path}")  # noqa: LOG015
+    logging.info("Saved %s", path)
     return run
