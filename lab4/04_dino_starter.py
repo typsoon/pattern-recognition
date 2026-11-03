@@ -40,6 +40,7 @@ from pathlib import Path
 import urllib.request
 from common import load, normalize, device
 from plots import plot_centering_sharpening, plot_curves
+from checkpointing import cached_train_dino
 import matplotlib.pyplot as plt
 
 
@@ -364,23 +365,25 @@ def present_the_outcome(full):
     plt.show()
 
 
-full = train_dino()
+full = cached_train_dino(train_dino, DINONetwork)
 present_the_outcome(full)
 
 # %% [markdown] id="E_xxs_xJVfK9"
 # # Your solution
 #
 # **Part 1:** `train_dino(center=False)`, `train_dino(sharpen=False)` and `train_dino(center=False, sharpen=False)`. **Part 2:** your own way to prevent collapse. Results vanish with the runtime, so save what you need to Drive. Good luck!
-no_center = train_dino(center=False)
+no_center = cached_train_dino(train_dino, DINONetwork, center=False)
 
 present_the_outcome(no_center)
 
 # %%
-no_sharpen = train_dino(sharpen=False)
+no_sharpen = cached_train_dino(train_dino, DINONetwork, sharpen=False)
 
 present_the_outcome(no_sharpen)
 # %%
-no_center_and_no_sharpen = train_dino(center=False, sharpen=False)
+no_center_and_no_sharpen = cached_train_dino(
+    train_dino, DINONetwork, center=False, sharpen=False
+)
 
 present_the_outcome(no_center_and_no_sharpen)
 # %%
