@@ -32,14 +32,10 @@
 # **Step 1. Data** (about 15 seconds). CIFAR-10: 50,000 training and 10,000 test images, 32×32, 10 classes, all kept on the GPU, so training does not wait for the CPU. We use a Hugging Face mirror because the original host is very slow. **The labels are used only inside `knn_eval()` and `val_knn()`.**
 
 # %% id="JPmkWZnnVfK5"
-import copy, io, time  # noqa: E401
-from torch.autograd.grad_mode import _force_original_view_tracking
-import numpy as np, pandas as pd, requests, torch, torch.nn as nn, torch.nn.functional as F  # noqa: E401
-from PIL import Image
-from pathlib import Path
-import urllib.request
+import copy, time  # noqa: E401
+import torch, torch.nn as nn, torch.nn.functional as F  # noqa: E401
 from common import load, normalize, device
-from plots import plot_centering_sharpening, plot_curves, plot_variants
+from plots import plot_variants
 from checkpointing import cached_train_dino
 import matplotlib.pyplot as plt
 
@@ -314,7 +310,7 @@ def train_dino(
             nn.utils.clip_grad_norm_(student.parameters(), 3.0)
             scaler.step(optimizer)
             scaler.update()
-            warmup.step()  # noqa: E702
+            warmup.step()
 
             step += 1
             if (
@@ -352,7 +348,7 @@ def train_dino(
 
 
 # %% id="P_5meqPbVfK9"
-def present_the_outcome(full, *, show_plots=True):
+def present_the_outcome(full):
     print(
         "student k-NN:",
         knn_eval(full["student"].backbone),
@@ -360,14 +356,10 @@ def present_the_outcome(full, *, show_plots=True):
         knn_eval(full["teacher"].backbone),
     )  # type: ignore
     print("peak GPU memory, GB:", round(torch.cuda.max_memory_allocated() / 2**30, 1))
-    if show_plots:
-        plot_curves(full)
-        plot_centering_sharpening(full, normalize(test_images[:2]))
-        plt.show()
 
 
 full = cached_train_dino(train_dino, DINONetwork)
-present_the_outcome(full, show_plots=False)
+present_the_outcome(full)
 
 # %% [markdown] id="E_xxs_xJVfK9"
 # # Your solution
@@ -375,18 +367,18 @@ present_the_outcome(full, show_plots=False)
 # **Part 1:** `train_dino(center=False)`, `train_dino(sharpen=False)` and `train_dino(center=False, sharpen=False)`. **Part 2:** your own way to prevent collapse. Results vanish with the runtime, so save what you need to Drive. Good luck!
 no_center = cached_train_dino(train_dino, DINONetwork, center=False)
 
-present_the_outcome(no_center, show_plots=False)
+present_the_outcome(no_center)
 
 # %%
 no_sharpen = cached_train_dino(train_dino, DINONetwork, sharpen=False)
 
-present_the_outcome(no_sharpen, show_plots=False)
+present_the_outcome(no_sharpen)
 # %%
 no_center_and_no_sharpen = cached_train_dino(
     train_dino, DINONetwork, center=False, sharpen=False
 )
 
-present_the_outcome(no_center_and_no_sharpen, show_plots=False)
+present_the_outcome(no_center_and_no_sharpen)
 # %%
 variants = {
     "Full DINO": full,
