@@ -39,7 +39,7 @@ from PIL import Image
 from pathlib import Path
 import urllib.request
 from common import load, normalize, device
-from plots import plot_centering_sharpening, plot_curves
+from plots import plot_centering_sharpening, plot_curves, plot_variants
 from checkpointing import cached_train_dino
 import matplotlib.pyplot as plt
 
@@ -352,7 +352,7 @@ def train_dino(
 
 
 # %% id="P_5meqPbVfK9"
-def present_the_outcome(full):
+def present_the_outcome(full, *, show_plots=True):
     print(
         "student k-NN:",
         knn_eval(full["student"].backbone),
@@ -360,13 +360,14 @@ def present_the_outcome(full):
         knn_eval(full["teacher"].backbone),
     )  # type: ignore
     print("peak GPU memory, GB:", round(torch.cuda.max_memory_allocated() / 2**30, 1))
-    plot_curves(full)
-    plot_centering_sharpening(full, normalize(train_images[:2]))
-    plt.show()
+    if show_plots:
+        plot_curves(full)
+        plot_centering_sharpening(full, normalize(test_images[:2]))
+        plt.show()
 
 
 full = cached_train_dino(train_dino, DINONetwork)
-present_the_outcome(full)
+present_the_outcome(full, show_plots=False)
 
 # %% [markdown] id="E_xxs_xJVfK9"
 # # Your solution
@@ -374,19 +375,30 @@ present_the_outcome(full)
 # **Part 1:** `train_dino(center=False)`, `train_dino(sharpen=False)` and `train_dino(center=False, sharpen=False)`. **Part 2:** your own way to prevent collapse. Results vanish with the runtime, so save what you need to Drive. Good luck!
 no_center = cached_train_dino(train_dino, DINONetwork, center=False)
 
-present_the_outcome(no_center)
+present_the_outcome(no_center, show_plots=False)
 
 # %%
 no_sharpen = cached_train_dino(train_dino, DINONetwork, sharpen=False)
 
-present_the_outcome(no_sharpen)
+present_the_outcome(no_sharpen, show_plots=False)
 # %%
 no_center_and_no_sharpen = cached_train_dino(
     train_dino, DINONetwork, center=False, sharpen=False
 )
 
-present_the_outcome(no_center_and_no_sharpen)
+present_the_outcome(no_center_and_no_sharpen, show_plots=False)
 # %%
+variants = {
+    "Full DINO": full,
+    "No centering": no_center,
+    "No sharpening": no_sharpen,
+    "No centering or sharpening": no_center_and_no_sharpen,
+}
+targets_fig, training_fig = plot_variants(variants, normalize(test_images[:2]))
+
+targets_fig.savefig("teacher-softmax-stages.png", dpi=300, bbox_inches="tight")
+training_fig.savefig("entropy-and-teacher-student-KL.png", dpi=300, bbox_inches="tight")
+plt.show()
 
 # %% id="BlYvBJpWVfK9"
 # Part 1

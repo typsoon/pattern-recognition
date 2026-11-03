@@ -1,2 +1,3 @@
 *.parquet
 download_data.sh
+*.png
