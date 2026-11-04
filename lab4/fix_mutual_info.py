@@ -17,6 +17,14 @@ Required work:
 
 Constraints: no labels in the training loss, no more than 20 epochs per run,
 and no changes to TinyViT or the fixed k-NN evaluation.
+
+Hint:
+1. Edit the file
+2. Push to your (isolated) branch
+3. Fetch (open) the repo from GitHub on Colab [your branch!]
+4. Edit notebook: 1. branch 2. add cell with " %run fix_mutual_info.py " line
+5. Run the cells
+6. When done, commit the notebook with logs to your branch
 """
 
 
