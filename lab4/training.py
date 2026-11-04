@@ -10,6 +10,8 @@ from torch.nn import functional as F
 
 from common import device, normalize
 from evaluation import val_knn
+from fix_mutual_info import mutual_info_loss
+from fix_standardize import standardized_targets
 from network import DINONetwork
 
 
@@ -82,8 +84,17 @@ def train_dino(
     tau_t=0.04,
     ema=0.996,
     center_momentum=0.9,
+    method="dino",
 ):
+    """Train with DINO, standardized teacher targets, or an added MI loss.
+
+    The fix functions accept (logits, temperature). standardized_targets
+    returns teacher probabilities; mutual_info_loss returns a scalar student
+    loss to add. For Part 2, pass center=False and sharpen=False.
+    """
     # returns: {"student", "teacher", "center": the K-dim center, "tau_t", "history": one dict of curves per logged step}
+    if method not in ("dino", "std", "mi"):
+        raise ValueError("method must be 'dino', 'std', or 'mi'")
     assert epochs <= 20, "the budget is 20 epochs per run"  # Enforce the lab's training budget.
     torch.manual_seed(seed)  # Reproduce initialization, batch order and random augmentations.
     tau_t = tau_t if sharpen else tau_s  # Disable sharpening by matching student temperature.
@@ -98,12 +109,16 @@ def train_dino(
     c = torch.zeros(K, device=device)  # Running mean of teacher logits, initially neutral.
     history, step, start = [], 0, time.time()  # Store logged metrics, update count and elapsed time.
 
-    def H(
-        t, s
-    ):  # cross-entropy with centered, sharpened teacher targets; the teacher gets no gradient
+    @torch.no_grad()
+    def teacher_targets(t):
+        if method == "std":
+            return standardized_targets(t, tau_t)
+        return F.softmax((t - c) / tau_t, -1)
+
+    def H(targets, s):  # Cross-entropy with fixed teacher targets.
         # Teacher probabilities weight the student's negative log-probabilities.
         return (
-            -(F.softmax((t - c) / tau_t, -1) * F.log_softmax(s / tau_s, -1))
+            -(targets * F.log_softmax(s / tau_s, -1))
             .sum(-1)  # Sum cross-entropy over K codes for each image.
             .mean()  # Average the per-image losses across the batch.
         )
@@ -119,7 +134,10 @@ def train_dino(
                     t1, t2 = teacher(x1), teacher(x2)
                 s1, s2 = student(x1), student(x2)
             t1, t2, s1, s2 = t1.float(), t2.float(), s1.float(), s2.float()  # Stable float32 loss math.
-            loss = (H(t1, s2) + H(t2, s1)) / 2  # Match opposite views in both directions.
+            targets1, targets2 = teacher_targets(t1), teacher_targets(t2)
+            loss = (H(targets1, s2) + H(targets2, s1)) / 2  # Match opposite views in both directions.
+            if method == "mi":
+                loss = loss + (mutual_info_loss(s1, tau_s) + mutual_info_loss(s2, tau_s)) / 2
 
             optimizer.zero_grad()  # Discard gradients from the previous batch.
             scaler.scale(loss).backward()  # Backpropagate a scaled loss to protect small gradients.
@@ -134,7 +152,7 @@ def train_dino(
                 # Log regularly and at the end of each epoch, including uneven intervals.
                 step % 20 == 0 or i == len(order) // batch_size - 1
             ):  # logged with the same center the loss just used
-                teacher_probs = F.softmax((t1 - c) / tau_t, -1)  # Reuse the loss's center and logits.
+                teacher_probs = targets1  # Log the same targets used by the loss.
                 history.append(
                     dict(
                         step=step,
@@ -148,7 +166,7 @@ def train_dino(
                 # Match each teacher parameter to the corresponding student parameter.
                 for p_t, p_s in zip(teacher.parameters(), student.parameters()):
                     p_t.mul_(ema).add_(p_s, alpha=1 - ema)  # teacher = ema*teacher + (1-ema)*student.
-                if center:  # Otherwise c stays zero throughout training.
+                if center and method != "std":  # Standardization replaces centering.
                     # Average logits over both views and update the running per-code mean.
                     c = center_momentum * c + (1 - center_momentum) * torch.cat(
                         [t1, t2]
