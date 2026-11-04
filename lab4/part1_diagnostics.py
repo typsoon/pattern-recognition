@@ -1,4 +1,4 @@
-"""TODO — Person 1: implement the Part 1 DINO diagnostics runner.
+""" Done in notebook — Piotr: implement the Part 1 DINO diagnostics runner.
 
 Required work:
 * Run all four center/sharpen combinations for 20 epochs with seed 0.
@@ -11,7 +11,7 @@ Required work:
   quantitative notes.md based on actual run outputs.
 
 Constraints: do not use labels in training, exceed 20 epochs per run, or edit
-the original ``04_dino_starter.ipynb`` or the fixed evaluation implementation.
+the fixed evaluation implementation.
 """
 
 
