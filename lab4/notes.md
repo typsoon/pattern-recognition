@@ -79,3 +79,65 @@ nearly image-independent outputs.
 
 - [Teacher softmax stages for all four variants](teacher-softmax-stages.png)
 - [Teacher entropy and teacher–student KL during training](entropy-and-teacher-student-KL.png)
+
+## Person 2: target-side batch standardization
+
+The six configurations were trained for 20 epochs each with seed 0. The
+selected configuration was chosen using `val_knn` only: column-wise
+standardization, `tau = 0.08`, `K = 1024`.
+
+| Rank | Standard deviation | Temperature | K | Final `val_knn` |
+| ---: | --- | ---: | ---: | ---: |
+| 1 | Column-wise | 0.08 | 1024 | 0.4780 |
+| 2 | Column-wise | 0.10 | 1024 | 0.4736 |
+| 3 | Scalar | 0.08 | 1024 | 0.4560 |
+| 4 | Scalar | 0.10 | 1024 | 0.4484 |
+| 5 | Scalar | 0.10 | 512 | 0.4410 |
+| 6 | Scalar | 0.12 | 1024 | 0.4356 |
+
+### Selected configuration across seeds
+
+The selected seed-0 tuning run was evaluated on the test set only after
+selection. Seeds 1 and 2 were then trained with the same configuration.
+
+| Seed | `val_knn` | `knn_eval` |
+| ---: | ---: | ---: |
+| 0 | 0.4780 | 0.4976 |
+| 1 | 0.4888 | 0.4996 |
+| 2 | 0.5020 | 0.5002 |
+
+Across the three test runs, mean accuracy is **49.91%** with sample standard
+deviation **0.14 percentage points**. The individual returned accuracies are
+49.76%, 49.96%, and 50.02%. Relative to the task's reference figures, this is
+about 1.11 points above standard DINO (48.8%) and 4.21 points above raw pixels
+(45.7%).
+
+### Collapse diagnostics and interpretation
+
+For the selected configuration, the final logged training-batch values were:
+
+| Seed | Teacher sample entropy (nats) | Batch entropy (nats) | Teacher–student KL (nats) |
+| ---: | ---: | ---: | ---: |
+| 0 | 0.53 | 5.94 | 2.863 |
+| 1 | 0.55 | 5.94 | 2.894 |
+| 2 | 0.55 | 5.99 | 2.897 |
+
+The low per-image entropy indicates sharp teacher targets, while batch entropy
+near 6 nats indicates substantially broader code use than in the scalar
+standardization runs (whose final batch entropy ranged from 3.35 to 3.84).
+For the selected runs, `exp(batch_entropy)` corresponds to roughly 380–400
+effective codes in the logged batch, out of 1,024. These are batch-level
+diagnostics, not measurements over the entire dataset.
+
+The method standardizes teacher logits over both augmented views: it subtracts
+each code's batch mean and divides by either a scalar or per-code batch
+standard deviation. Teacher and student use the same temperature, and no
+running DINO center is applied. The results are consistent with centering the
+batch activity while preserving logit variation so the teacher targets remain
+sharp.
+
+This is empirical evidence, not a proof that every collapsed state is
+impossible. If logits are exactly constant across a batch, their centered
+variance is zero and the standardized targets become uniform. In these runs,
+the entropy diagnostics and k-NN results show that this degenerate outcome was
+not reached.
