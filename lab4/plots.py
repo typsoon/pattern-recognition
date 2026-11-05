@@ -57,14 +57,15 @@ def plot_variants(results, images, *, max_codes=12):
     # Reserve the top 5% for the figure title and separate rows and columns.
     targets_fig.tight_layout(rect=(0, 0, 1, 0.95), h_pad=2.5, w_pad=2)
 
-    # Both diagnostics use the same training-step axis, with independent y scales.
-    curves_fig, curve_axes = plt.subplots(1, 2, figsize=(12, 4.5), sharex=True)
-    # Bind each metric key to its subplot title and units.
+    # All diagnostics use the same training-step axis, with independent y scales.
+    curves_fig, curve_axes = plt.subplots(1, 3, figsize=(18, 4.5), sharex=True)
+    # Bind each metric key to its subplot title and units. Low batch entropy means every
+    # image uses the same codes; high entropy of one image means a nearly uniform output.
     for ax, key, title, ylabel in zip(
         curve_axes,
-        ("entropy", "kl"),
-        ("Teacher entropy", "Teacher–student KL"),
-        ("Entropy (nats)", "KL(teacher || student) (nats)"),
+        ("entropy", "batch_entropy", "kl"),
+        ("Teacher entropy", "Entropy of the batch-average code", "Teacher–student KL"),
+        ("Entropy (nats)", "Entropy (nats)", "KL(teacher || student) (nats)"),
     ):
         for label, result in results.items():
             history = result["history"]

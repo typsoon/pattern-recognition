@@ -82,8 +82,11 @@ def train_dino(
     tau_t=0.04,
     ema=0.996,
     center_momentum=0.9,
+    extra_loss=None,
 ):
     # returns: {"student", "teacher", "center": the K-dim center, "tau_t", "history": one dict of curves per logged step}
+    # extra_loss - optional function (s1, s2) -> scalar added to the loss, where s1, s2 are the
+    #              student logits of the two views; None (default) is the original DINO loop.
     assert epochs <= 20, "the budget is 20 epochs per run"  # Enforce the lab's training budget.
     torch.manual_seed(seed)  # Reproduce initialization, batch order and random augmentations.
     tau_t = tau_t if sharpen else tau_s  # Disable sharpening by matching student temperature.
@@ -120,6 +123,8 @@ def train_dino(
                 s1, s2 = student(x1), student(x2)
             t1, t2, s1, s2 = t1.float(), t2.float(), s1.float(), s2.float()  # Stable float32 loss math.
             loss = (H(t1, s2) + H(t2, s1)) / 2  # Match opposite views in both directions.
+            if extra_loss is not None:  # Part 2 regularisers, e.g. fix_mutual_info.py.
+                loss = loss + extra_loss(s1, s2)
 
             optimizer.zero_grad()  # Discard gradients from the previous batch.
             scaler.scale(loss).backward()  # Backpropagate a scaled loss to protect small gradients.
