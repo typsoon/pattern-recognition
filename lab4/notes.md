@@ -6,22 +6,26 @@ nats, so the maximum possible teacher entropy is `ln(1024) ≈ 6.931`.
 
 ## Final training measurements
 
-These values come from the last logged training step, 1,940, in the saved
-checkpoints. They describe the logged training batch, rather than the two test
-images used in the bar plots.
+Reporting precision: the runner notebook prints epoch-20 entropies to two
+decimals and KL to three. Use the rounded values below; do not imply additional
+precision. The training loop processes 97 complete batches per epoch, so the
+final epoch log is step 1,940. These metrics describe its final logged training
+batch, not the two test images used in the bar plots.
 
-| Variant | Teacher entropy | Teacher–student KL | Interpretation |
-| --- | ---: | ---: | --- |
-| Full DINO | 1.523 | 1.672 | Confident outputs with substantial variation between images |
-| No centering | 0.149 | 0.177 | Strong concentration on very few codes; evidence of collapse |
-| No sharpening | 6.926 | 0.0010 | Almost uniform outputs and close teacher–student agreement |
-| No centering or sharpening | 6.740 | 0.0004 | Nearly constant, somewhat nonuniform outputs |
+| Variant | Teacher entropy | Batch entropy | Teacher–student KL | Interpretation |
+| --- | ---: | ---: | ---: | --- |
+| Full DINO | 1.51 | 5.65 | 1.767 | Confident outputs with substantial variation between images |
+| No centering | 0.20 | 0.89 | 0.247 | Strong concentration on very few codes; evidence of collapse |
+| No sharpening | 6.93 | 6.93 | 0.001 | Almost uniform outputs and close teacher–student agreement |
+| No centering or sharpening | 6.74 | 6.74 | 0.000 | Nearly constant, somewhat nonuniform outputs |
 
-The no-centering run has not reached an exactly constant one-hot output:
-its entropy and KL remain above zero. The overall trend is toward that form of
-collapse. Without sharpening, the teacher entropy approaches its maximum,
-indicating collapse toward uniform predictions. These trends agree with the
-collapse study in the [DINO paper, Section 5.3](https://arxiv.org/html/2104.14294v2#S5.SS3).
+The no-centering run has not reached an exactly constant one-hot output: its
+teacher entropy, batch entropy, and KL remain above zero. The low batch entropy
+shows that code use is concentrated, but it does not establish that every
+image uses the same code. Without sharpening, both entropies approach their
+maximum, indicating collapse toward uniform predictions. These trends agree
+with the collapse study in the
+[DINO paper, Section 5.3](https://arxiv.org/html/2104.14294v2#S5.SS3).
 
 ## Why the distributions agree without sharpening
 
@@ -39,11 +43,11 @@ For a uniform prediction, every code has probability approximately
 approximately zero. Agreement is easy to achieve this way, but the output
 contains little information about which image was supplied.
 
-The saved history supports this interpretation: without sharpening, the final
-entropy of the batch-average teacher distribution is `6.9314`, while the mean
-per-image entropy is `6.9256`. Their small difference indicates little variation
-between images in that logged batch. With full DINO, these values are `5.6524`
-and `1.5226`, respectively, indicating much greater variation between images.
+At the runner's printed precision, the no-sharpening run ends with per-image
+and batch-average entropies of `6.93` and `6.93`; full DINO ends at `1.51` and
+`5.65`, respectively. The notebook output does not report additional decimal
+places for these epoch summaries, so the values above should not be presented
+as more precise than shown.
 
 ## Does shared initialization explain it?
 
