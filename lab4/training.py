@@ -83,10 +83,34 @@ def train_dino(
     ema=0.996,
     center_momentum=0.9,
     extra_loss=None,
+    target_transform=None,
 ):
-    # returns: {"student", "teacher", "center": the K-dim center, "tau_t", "history": one dict of curves per logged step}
-    # extra_loss - optional function (s1, s2) -> scalar added to the loss, where s1, s2 are the
-    #              student logits of the two views; None (default) is the original DINO loop.
+    """Train a DINO student against an EMA teacher using two augmented views.
+
+    Each teacher target is matched to the student's prediction on the opposite
+    view. Teacher targets are computed without gradients; only the student is
+    optimized. Validation k-NN is reported every five epochs.
+
+    Args:
+        extra_loss: Optional callable ``(s1, s2) -> scalar`` added to the
+            cross-view loss. Inputs are float32 student logits of shape
+            ``(batch_size, K)``; the returned loss can carry student gradients.
+        target_transform: Optional callable ``(t1, t2) -> (p1, p2)`` receiving
+            float32 teacher logits and returning target probabilities, all of
+            shape ``(batch_size, K)``. Called once per batch without gradients.
+            By default, targets are ``softmax((t - c) / tau_t)``. A custom
+            transform handles its own centering, scaling, and temperature.
+        center: Whether to update the running teacher-logit center. If false,
+            the center stays zero. Use false for batch-standardized targets.
+        sharpen: Whether to keep the supplied teacher temperature. If false,
+            ``tau_t`` is set to ``tau_s``. Custom targets bypass this temperature.
+
+    Returns:
+        A dictionary containing ``student``, ``teacher``, the final ``center``
+        of shape ``(K,)``, the effective ``tau_t``, and ``history``. History entries
+        contain the step, total loss, teacher entropy, batch entropy, and KL
+        divergence to the student's prediction on the opposite view.
+    """
     assert epochs <= 20, "the budget is 20 epochs per run"  # Enforce the lab's training budget.
     torch.manual_seed(seed)  # Reproduce initialization, batch order and random augmentations.
     tau_t = tau_t if sharpen else tau_s  # Disable sharpening by matching student temperature.
@@ -101,15 +125,25 @@ def train_dino(
     c = torch.zeros(K, device=device)  # Running mean of teacher logits, initially neutral.
     history, step, start = [], 0, time.time()  # Store logged metrics, update count and elapsed time.
 
-    def H(
-        t, s
-    ):  # cross-entropy with centered, sharpened teacher targets; the teacher gets no gradient
-        # Teacher probabilities weight the student's negative log-probabilities.
-        return (
-            -(F.softmax((t - c) / tau_t, -1) * F.log_softmax(s / tau_s, -1))
-            .sum(-1)  # Sum cross-entropy over K codes for each image.
-            .mean()  # Average the per-image losses across the batch.
-        )
+    def H(target, log_student):
+        """Sum cross-entropy over K codes and average over the batch.
+
+        Both inputs have shape ``(batch_size, K)``: ``target`` contains teacher
+        probabilities and ``log_student`` contains student log-probabilities.
+        Return a scalar loss with gradients through the student prediction.
+        """
+        return -(target * log_student).sum(-1).mean()
+
+    def default_transform(t1, t2):
+        """Return centered, temperature-scaled probabilities for both teacher views.
+
+        Accept two teacher-logit tensors of shape ``(batch_size, K)`` and return
+        probability tensors of the same shape. Use the enclosing scope's current
+        running center ``c`` and effective teacher temperature ``tau_t``.
+        """
+        return F.softmax((t1 - c) / tau_t, -1), F.softmax((t2 - c) / tau_t, -1)
+
+    target_transform = default_transform if target_transform is None else target_transform
 
     for epoch in range(1, epochs + 1):
         order = torch.randperm(len(train_images), device=device)  # Reshuffle images each epoch.
@@ -122,7 +156,13 @@ def train_dino(
                     t1, t2 = teacher(x1), teacher(x2)
                 s1, s2 = student(x1), student(x2)
             t1, t2, s1, s2 = t1.float(), t2.float(), s1.float(), s2.float()  # Stable float32 loss math.
-            loss = (H(t1, s2) + H(t2, s1)) / 2  # Match opposite views in both directions.
+            with torch.no_grad():
+                target1, target2 = target_transform(t1, t2)
+
+            log_student1 = F.log_softmax(s1 / tau_s, -1)
+            log_student2 = F.log_softmax(s2 / tau_s, -1)
+            # Match each teacher target with the student's prediction on the opposite view.
+            loss = (H(target1, log_student2) + H(target2, log_student1)) / 2
             if extra_loss is not None:  # Part 2 regularisers, e.g. fix_mutual_info.py.
                 loss = loss + extra_loss(s1, s2)
 
@@ -139,13 +179,12 @@ def train_dino(
                 # Log regularly and at the end of each epoch, including uneven intervals.
                 step % 20 == 0 or i == len(order) // batch_size - 1
             ):  # logged with the same center the loss just used
-                teacher_probs = F.softmax((t1 - c) / tau_t, -1)  # Reuse the loss's center and logits.
                 history.append(
                     dict(
                         step=step,
                         loss=loss.item(),  # Store a plain number rather than a graph-connected tensor.
                         # Expand the metric dictionary into this step's history entry.
-                        **collapse_curves(teacher_probs, F.log_softmax(s2 / tau_s, -1)),
+                        **collapse_curves(target1, log_student2),
                     )
                 )
 
