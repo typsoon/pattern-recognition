@@ -464,7 +464,6 @@
           <div class="card teal"><strong>Observed:</strong> centering counters persistent code dominance; sharpening makes teacher targets decisive rather than nearly uniform.</div>
           <div class="card amber"><strong>Nuance:</strong> removing both controls did not end in a single one-hot code here. The run approached image-independent, nearly uniform outputs instead.</div>
         </div>
-        <p class="tiny" style="margin-top:.55rem">Entropy/KL values are rounded exactly as printed at epoch 20; k-NN values are the notebook's student test outputs.</p>
       </div>
       <div class="slide-foot"><span>k-NN values are returned accuracies, not percentages.</span><span>07 / 14</span></div>
       <details class="notes"><summary>Speaker notes · 1:00</summary><p>The ablations support complementary roles, but not a claim that the system reached a mathematically exact collapsed state. Removing centering concentrates the batch on fewer codes; removing sharpening makes outputs nearly uniform. With both off, this particular run is still close to uniform. The resulting k-NN values fall below full DINO, but remain nonzero, so we describe these as collapse trends rather than a binary all-or-nothing outcome.</p></details>
@@ -631,13 +630,10 @@
             </ul>
           </div>
         </div>
-        <div class="card amber" style="margin-top:.55rem">
-          <strong>Precision note:</strong> Part 1 entropy and KL endpoints follow the runner notebook and are rounded to the precision it prints. Entropy is shown to two decimals and KL to three; do not imply additional precision.
-        </div>
         <p class="lead" style="margin:.7rem 0 0"><strong>Bottom line:</strong> agreement is not enough; useful training needs sharp per-image targets and broad code use—and the representation still has to pass the fixed k-NN test.</p>
       </div>
       <div class="slide-foot"><span>Questions</span><span>14 / 14</span></div>
-      <details class="notes"><summary>Speaker notes · 1:10</summary><p>Our strongest supported conclusion is empirical, not universal: in these saved runs, removing each DINO control caused a different failure trend, while the custom methods provided useful comparisons. Standardization was selected on validation and gave the highest measured three-seed test mean. It does not prove that uniform collapse is impossible; the mutual-information objective expresses the two-mode argument more directly but scored lower. Part 1 endpoints are shown at the runner notebook's printed precision, so use only the displayed rounded values.</p></details>
+      <details class="notes"><summary>Speaker notes · 1:10</summary><p>Our strongest supported conclusion is empirical, not universal: in these saved runs, removing each DINO control caused a different failure trend, while the custom methods provided useful comparisons. Standardization was selected on validation and gave the highest measured three-seed test mean. It does not prove that uniform collapse is impossible; the mutual-information objective expresses the two-mode argument more directly but scored lower.</p></details>
     </section>
   </main>
 
