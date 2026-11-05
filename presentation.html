@@ -400,7 +400,7 @@
           <span class="small">These are task reference figures, not substitutes for this notebook's returned values.</span>
         </div>
       </div>
-      <div class="slide-foot"><span>Notebook: <code>training.py</code>, <code>evaluation.py</code></span><span>03 / 14</span></div>
+      <div class="slide-foot"><span>Training loop and fixed evaluation</span><span>03 / 14</span></div>
       <details class="notes"><summary>Speaker notes · 1:00</summary><p>The architecture and evaluation are fixed. The trainer shuffles the 50,000 indices, then uses only complete batches, so 336 shuffled images are omitted from each epoch. The training labels are passed to the loop only so it can call validation k-NN every five epochs. Final test evaluation uses the prescribed weighted k-NN and is not used to select the configuration.</p></details>
     </section>
 
@@ -412,7 +412,7 @@
         </div>
         <p class="small">Within each row: raw teacher logits → shared running center → centered logits → full-softmax target, with only the top 12 codes drawn. Code IDs are local to each trained run.</p>
       </div>
-      <div class="slide-foot"><span>Source: <code>plots.py::plot_variants</code>, notebook cell “plots”</span><span>04 / 14</span></div>
+      <div class="slide-foot"><span>Saved notebook figure · same two test inputs across runs</span><span>04 / 14</span></div>
       <details class="notes"><summary>Speaker notes · 1:00</summary><p>Both images are run through each trained teacher, and the same two test inputs are used for every row. Full DINO produces distinct, non-uniform targets. With centering removed but sharpening retained, the teacher outputs become very concentrated. The two displayed images do not themselves prove all images share a code; the training-batch entropy on the next slides supplies that broader evidence.</p></details>
     </section>
 
@@ -444,7 +444,7 @@
           <p><strong>KL:</strong> D<sub>KL</sub>(teacher ‖ student) on opposite augmented views; low KL is not a success metric by itself.</p>
         </div>
       </div>
-      <div class="slide-foot"><span>Metrics: <code>training.py::collapse_curves</code></span><span>06 / 14</span></div>
+      <div class="slide-foot"><span>Metrics: per-image entropy, batch entropy, directional KL</span><span>06 / 14</span></div>
       <details class="notes"><summary>Speaker notes · 1:20</summary><p>Per-image entropy and batch entropy answer different questions. No centering drives individual targets toward sharp peaks and also reduces the number of codes used by the batch. No sharpening moves per-image entropy toward ln K, while teacher–student KL approaches zero: the networks agree on an uninformative target. The KL is directional and compares a teacher target from one view with the student's prediction on the other view. The different teacher and student temperatures can keep KL high in full DINO.</p></details>
     </section>
 
@@ -464,7 +464,7 @@
           <div class="card teal"><strong>Observed:</strong> centering counters persistent code dominance; sharpening makes teacher targets decisive rather than nearly uniform.</div>
           <div class="card amber"><strong>Nuance:</strong> removing both controls did not end in a single one-hot code here. The run approached image-independent, nearly uniform outputs instead.</div>
         </div>
-        <p class="tiny" style="margin-top:.55rem">Entropy/KL values are the runner's printed epoch-20 values; k-NN values are the notebook's student test outputs. <code>lab4/notes.md</code> reports some different Part 1 final entropy/KL values; see the evidence caveat on slide 14.</p>
+        <p class="tiny" style="margin-top:.55rem">Entropy/KL values are rounded exactly as printed at epoch 20; k-NN values are the notebook's student test outputs.</p>
       </div>
       <div class="slide-foot"><span>k-NN values are returned accuracies, not percentages.</span><span>07 / 14</span></div>
       <details class="notes"><summary>Speaker notes · 1:00</summary><p>The ablations support complementary roles, but not a claim that the system reached a mathematically exact collapsed state. Removing centering concentrates the batch on fewer codes; removing sharpening makes outputs nearly uniform. With both off, this particular run is still close to uniform. The resulting k-NN values fall below full DINO, but remain nonzero, so we describe these as collapse trends rather than a binary all-or-nothing outcome.</p></details>
@@ -488,7 +488,7 @@
         </div>
         <p class="small" style="margin-top:.8rem">We keep the choice rule clean: select settings using <code>val_knn()</code>, then report the held-out test results without tuning on them.</p>
       </div>
-      <div class="slide-foot"><span>Implementations: <code>fix_standardize.py</code> and <code>fix_mutual_info.py</code></span><span>08 / 14</span></div>
+      <div class="slide-foot"><span>Part 2: target standardization and mutual-information regularization</span><span>08 / 14</span></div>
       <details class="notes"><summary>Speaker notes · 0:50</summary><p>The codebase contains two Part 2 approaches, so we show both rather than silently implying there is only one. Standardization is the strongest validation-selected accuracy candidate. Mutual information is a more direct way to express why both constant one-code and uniform-output mappings are undesirable. We did not use the test set to choose between configurations.</p></details>
     </section>
 
@@ -530,7 +530,7 @@
         </div>
         <p class="tiny">A batch entropy of 5.94 corresponds to about exp(5.94) ≈ 380 effective codes out of 1,024 for that logged batch.</p>
       </div>
-      <div class="slide-foot"><span>Actual saved history: <code>standardize_best_seed0_history.json</code></span><span>10 / 14</span></div>
+      <div class="slide-foot"><span>Selected column-wise run · 116 logged training points</span><span>10 / 14</span></div>
       <details class="notes"><summary>Speaker notes · 1:00</summary><p>The selected seed-0 history has low per-image target entropy, so individual assignments are sharp. Its batch-average entropy remains much higher, so the batch is not confined to one or two codes. The approximate effective-code count is exp of the entropy; it is a batch-level summary, not a count over the full dataset. KL remains appreciable because it compares the teacher target with the student on a different augmented view.</p></details>
     </section>
 
@@ -567,7 +567,7 @@
         </figure>
         <p class="small">Selected run at epoch 20: teacher entropy 2.52 nats, batch entropy 5.09 nats, KL 1.114 nats; <code>val_knn()</code> = 0.4566.</p>
       </div>
-      <div class="slide-foot"><span>Notebook-generated histories from <code>fix_mutual_info.py</code></span><span>12 / 14</span></div>
+      <div class="slide-foot"><span>Eight seed-0 hyperparameter runs · notebook-generated curves</span><span>12 / 14</span></div>
       <details class="notes"><summary>Speaker notes · 0:50</summary><p>The chart overlays the eight seed-0 settings actually evaluated. The equal-weight setting maximized validation k-NN among them. Its per-image entropy falls while batch entropy remains above five nats, which is consistent with sharp predictions spread across many codes. The final KL is not expected to be near zero: the DINO student and teacher see different augmentations and optimization continues under the extra objective.</p></details>
     </section>
 
@@ -623,21 +623,21 @@
           <div>
             <h3>Implementation map</h3>
             <ul class="small">
-              <li><code>training.py</code>: <code>train_dino()</code>, EMA, temperatures, history, <code>collapse_curves()</code>.</li>
-              <li><code>plots.py</code>: teacher softmax stages and four-run curves.</li>
-              <li><code>fix_standardize.py</code>: <code>standardized_targets()</code> and validation grid.</li>
-              <li><code>fix_mutual_info.py</code>: <code>mutual_info_loss()</code>, training hook, validation grid.</li>
-              <li><code>evaluation.py</code>: fixed <code>val_knn()</code> and <code>knn_eval()</code>.</li>
+              <li>Training loop: <code>train_dino()</code>, EMA, temperatures, history, <code>collapse_curves()</code>.</li>
+              <li>Diagnostics: <code>plot_variants()</code> for teacher stages and four-run curves.</li>
+              <li>Standardization: <code>standardized_targets()</code> and its validation grid.</li>
+              <li>Mutual information: <code>mutual_info_loss()</code>, training hook, and validation grid.</li>
+              <li>Evaluation: fixed <code>val_knn()</code> and <code>knn_eval()</code>.</li>
             </ul>
           </div>
         </div>
         <div class="card amber" style="margin-top:.55rem">
-          <strong>Evidence caveat:</strong> <code>lab4/notes.md</code> and the saved runner notebook disagree on some Part 1 final entropy/KL values (for example Full-DINO KL 1.672 vs 1.767; no-centering KL 0.177 vs 0.247). The plotted image and table use the runner notebook output. Reconcile against the saved histories/checkpoints before presenting exact Part 1 endpoints.
+          <strong>Precision note:</strong> Part 1 entropy and KL endpoints follow the runner notebook and are rounded to the precision it prints. Entropy is shown to two decimals and KL to three; do not imply additional precision.
         </div>
         <p class="lead" style="margin:.7rem 0 0"><strong>Bottom line:</strong> agreement is not enough; useful training needs sharp per-image targets and broad code use—and the representation still has to pass the fixed k-NN test.</p>
       </div>
       <div class="slide-foot"><span>Questions</span><span>14 / 14</span></div>
-      <details class="notes"><summary>Speaker notes · 1:10</summary><p>Our strongest supported conclusion is empirical, not universal: in these saved runs, removing each DINO control caused a different failure trend, while the custom methods provided useful comparisons. Standardization was selected on validation and gave the highest measured three-seed test mean. It does not prove that uniform collapse is impossible; the mutual-information objective expresses the two-mode argument more directly but scored lower. Also, the notes file and runner output disagree on some exact Part 1 endpoints, so those should be checked against the original histories before the defense.</p></details>
+      <details class="notes"><summary>Speaker notes · 1:10</summary><p>Our strongest supported conclusion is empirical, not universal: in these saved runs, removing each DINO control caused a different failure trend, while the custom methods provided useful comparisons. Standardization was selected on validation and gave the highest measured three-seed test mean. It does not prove that uniform collapse is impossible; the mutual-information objective expresses the two-mode argument more directly but scored lower. Part 1 endpoints are shown at the runner notebook's printed precision, so use only the displayed rounded values.</p></details>
     </section>
   </main>
 
