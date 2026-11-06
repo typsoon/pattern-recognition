@@ -81,8 +81,8 @@ nearly image-independent outputs.
 
 ## Generated figures
 
-- [Teacher softmax stages for all four variants](teacher-softmax-stages.png)
-- [Teacher entropy and teacher–student KL during training](entropy-and-teacher-student-KL.png)
+- [Teacher softmax stages for all four variants](plots/teacher-softmax-stages.png)
+- [Teacher entropy and teacher–student KL during training](plots/entropy-and-teacher-student-KL.png)
 
 ## Person 2: target-side batch standardization
 
@@ -145,3 +145,110 @@ impossible. If logits are exactly constant across a batch, their centered
 variance is zero and the standardized targets become uniform. In these runs,
 the entropy diagnostics and k-NN results show that this degenerate outcome was
 not reached.
+
+## Person 3: mutual-information regularization
+
+### Mathematical formulation and motivation
+
+Without centering and sharpening (teacher and student share one temperature
+`tau_t = tau_s = tau`), unconstrained self-distillation collapses into one of
+two degenerate equilibria where code assignments become independent of the
+input image:
+
+1. **Single-code dominance (Collapse A):** every image maps to the exact same
+   prototype code $\implies H(\bar{P}_s) = 0$ and $\text{mean}(H(P_{s,i})) = 0$.
+2. **Uniform code dispersion (Collapse B):** every image yields a flat, uniform
+   probability distribution across all $K$ prototypes $\implies H(\bar{P}_s) = \ln K$
+   and $\text{mean}(H(P_{s,i})) = \ln K$.
+
+Here, $P_{s,i}$ denotes the student distribution for image view $i \in \{1, \dots, 2B\}$,
+and $\bar{P}_s = \frac{1}{2B} \sum_{i=1}^{2B} P_{s,i}$ is the empirical marginal
+code distribution across the batch of $2B$ views. The method adds two explicit
+entropy penalties to the DINO cross-entropy loss:
+
+$$\mathcal{L}_{\text{total}} = \mathcal{L}_{\text{DINO}} - \lambda_{\text{marg}} H(\bar{P}_s) + \lambda_{\text{cond}} \frac{1}{2B} \sum_{i=1}^{2B} H(P_{s,i})$$
+
+When $\lambda_{\text{marg}} = \lambda_{\text{cond}} = \lambda$, this penalty is
+strictly $-\lambda I(X; Z)$, the negative mutual information between the input
+view $X$ and discrete code assignment $Z$. Maximizing the marginal entropy
+$H(\bar{P}_s)$ penalizes code concentration across the batch (blocking Collapse A),
+while minimizing conditional entropy $\text{mean}(H(P_{s,i}))$ forces confident,
+sharp predictions for each individual sample (blocking Collapse B).
+
+### Hyperparameter tuning on seed 0
+
+Eight candidate configurations were trained for 20 epochs on seed 0. Configuration
+selection relied exclusively on validation accuracy (`val_knn`); test evaluation
+was performed only after tuning.
+
+| Rank | $\lambda_{\text{marg}}$ | $\lambda_{\text{cond}}$ | Temperature ($\tau$) | $K$ | Final `val_knn` |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 0.50 | 0.50 | 0.05 | 1024 | 0.4566 |
+| 2 | 0.25 | 0.25 | 0.05 | 1024 | 0.4358 |
+| 3 | 2.50 | 0.30 | 0.07 | 1024 | 0.3874 |
+| 4 | 2.00 | 0.20 | 0.05 | 1024 | 0.3804 |
+| 5 | 1.50 | 0.10 | 0.07 | 1024 | 0.3790 |
+| 6 | 2.00 | 0.20 | 0.07 | 512 | 0.3788 |
+| 7 | 2.00 | 0.20 | 0.10 | 1024 | 0.3784 |
+| 8 | 2.00 | 0.20 | 0.07 | 1024 | 0.3774 |
+
+Equal mutual-information weighting ($\lambda_{\text{marg}} = \lambda_{\text{cond}} = 0.50$)
+with a lower temperature ($\tau = 0.05$) markedly outperformed the asymmetric
+penalty schedules ($\lambda_{\text{marg}} \gg \lambda_{\text{cond}}$), which stagnated
+near `val_knn ≈ 0.38`.
+
+### Selected configuration across seeds
+
+The selected configuration (`lambda_marg = 0.5, lambda_cond = 0.5, tau = 0.05, K = 1024`)
+was then trained on seeds 1 and 2 and evaluated on the test set (`knn_eval`):
+
+| Seed | `val_knn` | `knn_eval` |
+| ---: | ---: | ---: |
+| 0 | 0.4566 | 0.4669 |
+| 1 | 0.4762 | 0.4851 |
+| 2 | 0.4664 | 0.4749 |
+
+Across the three runs, mean test accuracy is **47.56%** with sample standard
+deviation **0.91 percentage points**. The individual test accuracies are
+46.69%, 48.51%, and 47.49%. While outperforming untrained ViT (32.0%) and raw
+pixels (45.68%), mutual-information regularization lags behind standard DINO
+(48.76% notebook / 48.8% reference) and Person 2 target standardization
+(49.91% ± 0.14%).
+
+### Collapse diagnostics and interpretation
+
+For the selected configuration, the final logged training-batch values were:
+
+| Seed | Teacher sample entropy (nats) | Batch entropy (nats) | Teacher–student KL (nats) |
+| ---: | ---: | ---: | ---: |
+| 0 | 2.52 | 5.09 | 1.114 |
+| 1 | 2.65 | 5.14 | 1.168 |
+| 2 | 2.67 | 5.17 | 1.102 |
+
+The diagnostics confirm that both collapse regimes were prevented:
+- **Batch entropy** stabilized around 5.1–5.2 nats. While below the theoretical
+  maximum ($\ln 1024 \approx 6.93$ nats) and lower than standardization (~5.95 nats),
+  $\exp(5.15) \approx 172$ codes were actively utilized per batch, successfully
+  precluding single-code dominance.
+- **Per-sample entropy** decreased from ~6.0 nats at epoch 1 to ~2.5–2.7 nats at
+  epoch 20, demonstrating that student distributions became moderately confident
+  rather than flattening into uniform probabilities.
+- **Teacher–student KL** settled around ~1.1 nats. Because teacher and student share
+  the same temperature ($\tau = 0.05$) without centering, this divergence reflects
+  genuine predictive disagreement across different augmented views.
+
+### Why mutual information underperformed target standardization
+
+Two structural factors explain why mutual information achieved lower representation
+quality:
+
+1. **Finite-sample marginal entropy bias:** The batch marginal $\bar{P}_s$ is computed
+   over $2B = 1024$ views across $K = 1024$ prototypes. With an average occupancy of
+   only 1 sample per bin, plug-in empirical entropy estimation suffers from substantial
+   negative bias and high gradient variance.
+2. **Gradient interference:** The mutual-information loss applies direct analytical
+   gradients to the student's softmax logits, competing with the cross-entropy
+   alignment to the EMA teacher. In contrast, target standardization operates
+   exclusively on the teacher's targets *before* computing the distillation loss,
+   leaving the student's learning dynamics harmonious and gradient-consistent.
+
